@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" role="img" aria-label="TaskTower splash background" >
+<defs><linearGradient id="splash-bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#F6ECFF"/><stop offset=".55" stop-color="#FFF8ED"/><stop offset="1" stop-color="#FFE6EC"/></linearGradient></defs><rect width="1080" height="1920" fill="url(#splash-bg)"/><g fill="#FFF" opacity=".7"><ellipse cx="175" cy="430" rx="190" ry="90"/><ellipse cx="920" cy="570" rx="220" ry="105"/></g><path d="M0 1700q270-240 540 0 300-300 540-40v260H0Z" fill="#C9DEB6" opacity=".65"/>
+</svg>

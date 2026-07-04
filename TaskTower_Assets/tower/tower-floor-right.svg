@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 110" role="img" aria-label="TaskTower tower floor right" >
+<defs>
+  <linearGradient id="floor-purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9B7BFF"/><stop offset="1" stop-color="#6545DA"/></linearGradient>
+  <linearGradient id="floor-pink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF8EA7"/><stop offset="1" stop-color="#E64E75"/></linearGradient>
+  <linearGradient id="floor-gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFD76A"/><stop offset="1" stop-color="#F0A52D"/></linearGradient>
+  <filter id="floor-shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#3F2D56" flood-opacity=".18"/></filter>
+</defs><path d="M8 105V18Q8 8 20 8h152v97Z" fill="url(#floor-pink)"/><rect x="61" y="28" width="58" height="60" rx="12" fill="#FFE4A6" stroke="#753049" stroke-width="6"/><path d="M8 97h164" stroke="#FFF" stroke-opacity=".42" stroke-width="6"/>
+</svg>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TaskTower level-up-burst effect" >
+<defs>
+  <linearGradient id="fx-purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9B7BFF"/><stop offset="1" stop-color="#6545DA"/></linearGradient>
+  <linearGradient id="fx-pink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF8EA7"/><stop offset="1" stop-color="#E64E75"/></linearGradient>
+  <linearGradient id="fx-gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFD76A"/><stop offset="1" stop-color="#F0A52D"/></linearGradient>
+  <filter id="fx-shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#3F2D56" flood-opacity=".18"/></filter>
+</defs><path d="m256 18 38 125 113-67-68 112 126 39-126 38 68 113-113-68-38 126-39-126-112 68 67-113-125-38 125-39-67-112 112 67Z" fill="url(#fx-gold)" opacity=".9"/><circle cx="256" cy="227" r="104" fill="#FFF8D9"/>
+</svg>

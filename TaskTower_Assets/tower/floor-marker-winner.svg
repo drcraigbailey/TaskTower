@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="TaskTower winner floor marker" >
+<defs>
+  <linearGradient id="marker-purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9B7BFF"/><stop offset="1" stop-color="#6545DA"/></linearGradient>
+  <linearGradient id="marker-pink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF8EA7"/><stop offset="1" stop-color="#E64E75"/></linearGradient>
+  <linearGradient id="marker-gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFD76A"/><stop offset="1" stop-color="#F0A52D"/></linearGradient>
+  <filter id="marker-shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#3F2D56" flood-opacity=".18"/></filter>
+</defs><circle cx="48" cy="48" r="38" fill="url(#marker-gold)" stroke="#D58A1D" stroke-width="6" filter="url(#marker-shadow)"/><g transform="translate(29 30) scale(0.68)" fill="url(#marker-gold)" stroke="#D58A1D" stroke-width="2" stroke-linejoin="round">
+  <path d="M4 28 0 6l17 12L28 0l11 18L56 6l-4 22Z"/><rect x="4" y="27" width="48" height="10" rx="4"/>
+  <circle cx="0" cy="6" r="4"/><circle cx="28" cy="1" r="4"/><circle cx="56" cy="6" r="4"/>
+</g>
+</svg>

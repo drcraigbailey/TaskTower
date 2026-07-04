@@ -1,0 +1,175 @@
+import bathroomIcon from '../assets/game-art/ui/chore-categories/chore-bathroom.webp'
+import houseworkIcon from '../assets/game-art/ui/chore-categories/chore-housework.webp'
+import kitchenIcon from '../assets/game-art/ui/chore-categories/chore-kitchen.webp'
+import laundryIcon from '../assets/game-art/ui/chore-categories/chore-laundry.webp'
+import livingRoomIcon from '../assets/game-art/ui/chore-categories/chore-living-room.webp'
+import outdoorIcon from '../assets/game-art/ui/chore-categories/chore-outdoor.webp'
+
+export const demoHouse = {
+  id: 'demo-house',
+  name: 'Sunshine Home',
+  joinCode: 'SUNNY-12',
+  streak: 8,
+  resetIn: 12,
+  towerHeight: 20,
+  members: [
+    {
+      id: 'you',
+      username: 'You',
+      floors: 12,
+      points: 84,
+      avatar: {
+        skin: '#C98252',
+        hair: '#4B2817',
+        hairStyle: 'wave',
+        outfit: '#7C5CFF',
+        accessory: 'none',
+        celebration: 'confetti',
+      },
+    },
+    {
+      id: 'alex',
+      username: 'Alex',
+      floors: 9,
+      points: 63,
+      avatar: {
+        skin: '#D99668',
+        hair: '#6B301B',
+        hairStyle: 'long',
+        outfit: '#FF6B8B',
+        accessory: 'none',
+        celebration: 'trophy',
+      },
+    },
+    {
+      id: 'sam',
+      username: 'Sam',
+      floors: 6,
+      points: 40,
+      avatar: {
+        skin: '#8C4C2E',
+        hair: '#211713',
+        hairStyle: 'curls',
+        outfit: '#F4AF42',
+        accessory: 'glasses',
+        celebration: 'dance',
+      },
+    },
+  ],
+}
+
+export const demoChores = [
+  {
+    id: 'kitchen',
+    name: 'Kitchen surfaces',
+    description: 'Wipe all kitchen counters and surfaces.',
+    category: 'Kitchen',
+    frequency: 'Daily',
+    difficulty: 2,
+    points: 2,
+    quickCount: 3,
+    fullCleanThreshold: 5,
+    status: 'due',
+    dueLabel: 'Due soon',
+  },
+  {
+    id: 'vacuum',
+    name: 'Vacuum living room',
+    description: 'Vacuum around furniture and under the coffee table.',
+    category: 'Living room',
+    frequency: 'Weekly',
+    difficulty: 2,
+    points: 2,
+    quickCount: 2,
+    fullCleanThreshold: 4,
+    status: 'done',
+    dueLabel: 'Done today',
+  },
+  {
+    id: 'bathroom',
+    name: 'Bathroom deep clean',
+    description: 'Clean the basin, shower, mirror and floor.',
+    category: 'Bathroom',
+    frequency: 'Fortnightly',
+    difficulty: 4,
+    points: 4,
+    quickCount: 5,
+    fullCleanThreshold: 5,
+    status: 'overdue',
+    dueLabel: 'Full clean needed',
+  },
+  {
+    id: 'laundry',
+    name: 'Laundry',
+    description: 'Wash, dry and fold one household load.',
+    category: 'Laundry',
+    frequency: 'Every 3 days',
+    difficulty: 2,
+    points: 2,
+    quickCount: 1,
+    fullCleanThreshold: 4,
+    status: 'due',
+    dueLabel: '2 days left',
+  },
+  {
+    id: 'recycling',
+    name: 'Take out recycling',
+    description: 'Empty the indoor recycling and take it outside.',
+    category: 'Housework',
+    frequency: 'Weekly',
+    difficulty: 1,
+    points: 1,
+    quickCount: 0,
+    fullCleanThreshold: 3,
+    status: 'done',
+    dueLabel: 'Done',
+  },
+]
+
+export const demoNotifications = [
+  {
+    id: 1,
+    type: 'success',
+    title: 'Alex climbed a floor!',
+    body: 'Kitchen surfaces is sparkling. The race is getting close.',
+    time: '12 min',
+    unread: true,
+  },
+  {
+    id: 2,
+    type: 'due',
+    title: 'Laundry is due soon',
+    body: 'Two days left—plenty of time.',
+    time: '2 hr',
+    unread: true,
+  },
+  {
+    id: 3,
+    type: 'house',
+    title: 'Eight-day household streak',
+    body: 'Sunshine Home is on a lovely little roll.',
+    time: 'Yesterday',
+    unread: false,
+  },
+]
+
+export const categoryMeta = {
+  Kitchen: { icon: kitchenIcon, tone: 'peach' },
+  Bathroom: { icon: bathroomIcon, tone: 'blue' },
+  'Living room': { icon: livingRoomIcon, tone: 'rose' },
+  Laundry: { icon: laundryIcon, tone: 'blue' },
+  Outdoor: { icon: outdoorIcon, tone: 'mint' },
+  Housework: { icon: houseworkIcon, tone: 'purple' },
+}
+
+export const defaultProfile = {
+  username: 'Alex',
+  avatar: {
+    skin: '#C98252',
+    hair: '#4B2817',
+    hairStyle: 'wave',
+    outfit: '#7C5CFF',
+    accessory: 'none',
+    celebration: 'confetti',
+  },
+}

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "masterFormats": ["png", "svg"],
+  "deliveryFormat": "webp",
+  "reference": "source-guides/theme-reference.png",
+  "folders": {
+    "brand": "logos and wordmarks",
+    "characters/poses": "full-body character states",
+    "characters/customisation": "aligned selectable variants",
+    "characters/climbing": "registered animation frames",
+    "screens": "full-screen and empty-state illustrations",
+    "ui/chore-categories": "transparent chore objects",
+    "ui/rewards": "reward cutouts",
+    "ui/effects": "transparent celebration overlays"
+  },
+  "available": [
+    "brand/tasktower-wordmark.svg",
+    "screens/main-menu/main-menu-day.webp",
+    "screens/tower/tower-day.webp",
+    "screens/chores/chores-teamwork.webp",
+    "screens/states/winner-celebration.webp",
+    "ui/chore-categories/chore-kitchen.webp",
+    "ui/chore-categories/chore-bathroom.webp",
+    "ui/chore-categories/chore-laundry.webp",
+    "ui/chore-categories/chore-living-room.webp",
+    "ui/chore-categories/chore-outdoor.webp",
+    "ui/chore-categories/chore-housework.webp"
+  ],
+  "needed": {
+    "characterPoses": ["yogi-idle", "yogi-walk", "yogi-climb", "yogi-celebrate", "yogi-sad", "yogi-thinking", "yogi-wave", "yogi-holding-trophy"],
+    "hair": ["brown", "black", "blonde", "red", "curly", "spiky", "purple", "blue"],
+    "skinTones": ["fair", "light", "medium", "deep", "dark"],
+    "hoodies": ["purple", "blue", "green", "yellow", "orange", "red", "pink"],
+    "climbingFrames": ["start", "01", "02", "03", "04", "top-celebrate"],
+    "screens": ["main-menu-background", "tower-evening", "tower-night", "house-page-background", "chores-empty", "leaderboard-podium", "loading-tower", "empty-join-house", "add-house"]
+  }
+}

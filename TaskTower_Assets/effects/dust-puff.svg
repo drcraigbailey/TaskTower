@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TaskTower dust-puff effect" >
+<defs>
+  <linearGradient id="fx-purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9B7BFF"/><stop offset="1" stop-color="#6545DA"/></linearGradient>
+  <linearGradient id="fx-pink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF8EA7"/><stop offset="1" stop-color="#E64E75"/></linearGradient>
+  <linearGradient id="fx-gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFD76A"/><stop offset="1" stop-color="#F0A52D"/></linearGradient>
+  <filter id="fx-shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#3F2D56" flood-opacity=".18"/></filter>
+</defs><g fill="#D9D2E5" opacity=".75"><circle cx="120" cy="300" r="55"/><circle cx="190" cy="255" r="80"/><circle cx="285" cy="280" r="98"/><circle cx="390" cy="310" r="62"/><circle cx="260" cy="370" r="55"/></g>
+</svg>

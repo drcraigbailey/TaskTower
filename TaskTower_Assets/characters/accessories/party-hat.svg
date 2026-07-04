@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" role="img" aria-label="TaskTower party-hat accessory" >
+<defs>
+  <linearGradient id="acc-purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9B7BFF"/><stop offset="1" stop-color="#6545DA"/></linearGradient>
+  <linearGradient id="acc-pink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF8EA7"/><stop offset="1" stop-color="#E64E75"/></linearGradient>
+  <linearGradient id="acc-gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFD76A"/><stop offset="1" stop-color="#F0A52D"/></linearGradient>
+  <filter id="acc-shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#3F2D56" flood-opacity=".18"/></filter>
+</defs><g filter="url(#acc-shadow)"><path d="m80 15-30 62h60Z" fill="#FF6B8B" stroke="#C43E62" stroke-width="3"/><path d="M60 55h39M70 35h19" stroke="#FFD76A" stroke-width="7"/><circle cx="80" cy="12" r="8" fill="#FFD76A"/></g>
+</svg>

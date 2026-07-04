@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 432 432" role="img" aria-label="TaskTower adaptive icon background" >
+<defs><linearGradient id="icon-bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#191249"/><stop offset=".55" stop-color="#35217B"/><stop offset="1" stop-color="#5A2C88"/></linearGradient></defs><rect width="432" height="432" fill="url(#icon-bg)"/><g fill="#FFD76A"><circle cx="72" cy="105" r="7"/><circle cx="354" cy="120" r="5"/><path d="m340 286 8 18 18 8-18 8-8 18-8-18-18-8 18-8Z"/></g>
+</svg>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" role="img" aria-label="TaskTower backpack accessory" >
+<defs>
+  <linearGradient id="acc-purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9B7BFF"/><stop offset="1" stop-color="#6545DA"/></linearGradient>
+  <linearGradient id="acc-pink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF8EA7"/><stop offset="1" stop-color="#E64E75"/></linearGradient>
+  <linearGradient id="acc-gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFD76A"/><stop offset="1" stop-color="#F0A52D"/></linearGradient>
+  <filter id="acc-shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#3F2D56" flood-opacity=".18"/></filter>
+</defs><g filter="url(#acc-shadow)"><path d="M35 112q0-31 30-31h30q30 0 30 31v61H35Z" fill="#F05B5F" stroke="#B93D4C" stroke-width="4"/><path d="M53 86q3-19 27-19t27 19M38 125h84" fill="none" stroke="#733344" stroke-width="6"/><rect x="55" y="131" width="50" height="25" rx="10" fill="#FF8B80"/></g>
+</svg>

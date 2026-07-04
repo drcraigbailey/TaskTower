@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" role="img" aria-label="TaskTower wizard-hat accessory" >
+<defs>
+  <linearGradient id="acc-purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9B7BFF"/><stop offset="1" stop-color="#6545DA"/></linearGradient>
+  <linearGradient id="acc-pink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF8EA7"/><stop offset="1" stop-color="#E64E75"/></linearGradient>
+  <linearGradient id="acc-gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFD76A"/><stop offset="1" stop-color="#F0A52D"/></linearGradient>
+  <filter id="acc-shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#3F2D56" flood-opacity=".18"/></filter>
+</defs><g filter="url(#acc-shadow)"><path d="M48 69 80 8l34 61Z" fill="#5A38D6"/><path d="M30 68h100q-5 18-50 18T30 68Z" fill="#45269A"/><path d="m78 32 4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1Z" fill="#FFD76A"/></g>
+</svg>
