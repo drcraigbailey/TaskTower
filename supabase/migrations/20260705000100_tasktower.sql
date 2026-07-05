@@ -3,9 +3,7 @@
 -- The client must use only the public anon key; RLS below is the security boundary.
 
 begin;
-
 create extension if not exists pgcrypto;
-
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -15,7 +13,6 @@ begin
   return new;
 end;
 $$;
-
 create table public.player_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   username text not null check (char_length(username) between 1 and 40),
@@ -29,7 +26,6 @@ create table public.player_profiles (
   updated_at timestamptz not null default now(),
   constraint player_profiles_celebration_check check (celebration in ('confetti','fireworks','dance','trophy','wave','silly'))
 );
-
 create table public.households (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 2 and 80),
@@ -39,7 +35,6 @@ create table public.households (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
 create table public.household_members (
   household_id uuid not null references public.households(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -47,7 +42,6 @@ create table public.household_members (
   joined_at timestamptz not null default now(),
   primary key (household_id, user_id)
 );
-
 create table public.chore_settings (
   household_id uuid primary key references public.households(id) on delete cascade,
   categories jsonb not null default '["Kitchen","Bathroom","Living room","Laundry","Outdoor","Housework"]'::jsonb,
@@ -61,7 +55,6 @@ create table public.chore_settings (
   updated_at timestamptz not null default now(),
   constraint chore_settings_celebration_check check (winner_celebration in ('confetti','fireworks','dance','trophy','wave','silly'))
 );
-
 create table public.household_join_codes (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households(id) on delete cascade,
@@ -73,7 +66,6 @@ create table public.household_join_codes (
   expires_at timestamptz,
   created_at timestamptz not null default now()
 );
-
 create table public.chores (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households(id) on delete cascade,
@@ -96,7 +88,6 @@ create table public.chores (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
 create table public.chore_completions (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households(id) on delete cascade,
@@ -108,7 +99,6 @@ create table public.chore_completions (
   completed_at timestamptz not null default now(),
   month_key date not null default date_trunc('month', current_date)::date
 );
-
 create table public.monthly_game_state (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references public.households(id) on delete cascade,
@@ -122,7 +112,6 @@ create table public.monthly_game_state (
   updated_at timestamptz not null default now(),
   unique (household_id, month_start, user_id)
 );
-
 create table public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -134,7 +123,6 @@ create table public.notifications (
   read_at timestamptz,
   created_at timestamptz not null default now()
 );
-
 create table public.push_tokens (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -144,7 +132,6 @@ create table public.push_tokens (
   last_seen_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
-
 create index household_members_user_idx on public.household_members(user_id);
 create index chores_household_order_idx on public.chores(household_id, sort_order) where is_active;
 create index chores_due_idx on public.chores(household_id, next_due_at) where is_active;
@@ -152,7 +139,6 @@ create index completions_household_month_idx on public.chore_completions(househo
 create index game_state_household_month_idx on public.monthly_game_state(household_id, month_start, floors_climbed desc);
 create index notifications_user_idx on public.notifications(user_id, created_at desc);
 create index notifications_unread_idx on public.notifications(user_id, created_at desc) where read_at is null;
-
 create or replace function public.is_household_member(p_household_id uuid, p_user_id uuid default auth.uid())
 returns boolean
 language sql
@@ -165,7 +151,6 @@ as $$
     where hm.household_id = p_household_id and hm.user_id = p_user_id
   );
 $$;
-
 create or replace function public.is_household_owner(p_household_id uuid, p_user_id uuid default auth.uid())
 returns boolean
 language sql
@@ -178,12 +163,10 @@ as $$
     where h.id = p_household_id and h.owner_id = p_user_id
   );
 $$;
-
 revoke all on function public.is_household_member(uuid, uuid) from public;
 revoke all on function public.is_household_owner(uuid, uuid) from public;
 grant execute on function public.is_household_member(uuid, uuid) to authenticated;
 grant execute on function public.is_household_owner(uuid, uuid) to authenticated;
-
 alter table public.player_profiles enable row level security;
 alter table public.households enable row level security;
 alter table public.household_members enable row level security;
@@ -194,7 +177,6 @@ alter table public.chore_completions enable row level security;
 alter table public.monthly_game_state enable row level security;
 alter table public.notifications enable row level security;
 alter table public.push_tokens enable row level security;
-
 create policy "profiles visible to self and housemates"
 on public.player_profiles for select to authenticated
 using (
@@ -208,47 +190,37 @@ using (
 );
 create policy "users insert own profile" on public.player_profiles for insert to authenticated with check (user_id = auth.uid());
 create policy "users update own profile" on public.player_profiles for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
-
 create policy "members read households" on public.households for select to authenticated using (public.is_household_member(id));
 create policy "users create owned households" on public.households for insert to authenticated with check (owner_id = auth.uid());
 create policy "owners update households" on public.households for update to authenticated using (public.is_household_owner(id)) with check (owner_id = auth.uid());
 create policy "owners delete households" on public.households for delete to authenticated using (public.is_household_owner(id));
-
 create policy "members read household membership" on public.household_members for select to authenticated using (public.is_household_member(household_id));
 create policy "owners add members" on public.household_members for insert to authenticated with check (public.is_household_owner(household_id));
 create policy "owners update members" on public.household_members for update to authenticated using (public.is_household_owner(household_id)) with check (public.is_household_owner(household_id));
 create policy "owners remove members" on public.household_members for delete to authenticated using (public.is_household_owner(household_id));
-
 create policy "members read chore settings" on public.chore_settings for select to authenticated using (public.is_household_member(household_id));
 create policy "owners insert chore settings" on public.chore_settings for insert to authenticated with check (public.is_household_owner(household_id));
 create policy "owners update chore settings" on public.chore_settings for update to authenticated using (public.is_household_owner(household_id)) with check (public.is_household_owner(household_id));
-
 create policy "members read join codes" on public.household_join_codes for select to authenticated using (public.is_household_member(household_id));
 create policy "owners create join codes" on public.household_join_codes for insert to authenticated with check (public.is_household_owner(household_id) and created_by = auth.uid());
 create policy "owners update join codes" on public.household_join_codes for update to authenticated using (public.is_household_owner(household_id)) with check (public.is_household_owner(household_id));
 create policy "owners delete join codes" on public.household_join_codes for delete to authenticated using (public.is_household_owner(household_id));
-
 create policy "members read chores" on public.chores for select to authenticated using (public.is_household_member(household_id));
 create policy "members create chores" on public.chores for insert to authenticated with check (public.is_household_member(household_id) and created_by = auth.uid());
 create policy "members update chores" on public.chores for update to authenticated using (public.is_household_member(household_id)) with check (public.is_household_member(household_id));
 create policy "members delete chores" on public.chores for delete to authenticated using (public.is_household_member(household_id));
-
 create policy "members read completions" on public.chore_completions for select to authenticated using (public.is_household_member(household_id));
 create policy "members insert own completions" on public.chore_completions for insert to authenticated with check (public.is_household_member(household_id) and user_id = auth.uid());
-
 create policy "members read monthly game" on public.monthly_game_state for select to authenticated using (public.is_household_member(household_id));
 create policy "members insert own monthly game" on public.monthly_game_state for insert to authenticated with check (public.is_household_member(household_id) and user_id = auth.uid());
 create policy "members update own monthly game" on public.monthly_game_state for update to authenticated using (public.is_household_member(household_id) and user_id = auth.uid()) with check (public.is_household_member(household_id) and user_id = auth.uid());
-
 create policy "users read own notifications" on public.notifications for select to authenticated using (user_id = auth.uid());
 create policy "users update own notifications" on public.notifications for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy "users delete own notifications" on public.notifications for delete to authenticated using (user_id = auth.uid());
-
 create policy "users read own push tokens" on public.push_tokens for select to authenticated using (user_id = auth.uid());
 create policy "users add own push tokens" on public.push_tokens for insert to authenticated with check (user_id = auth.uid());
 create policy "users update own push tokens" on public.push_tokens for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy "users delete own push tokens" on public.push_tokens for delete to authenticated using (user_id = auth.uid());
-
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -265,16 +237,13 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_user();
-
 create trigger player_profiles_updated before update on public.player_profiles for each row execute function public.set_updated_at();
 create trigger households_updated before update on public.households for each row execute function public.set_updated_at();
 create trigger chore_settings_updated before update on public.chore_settings for each row execute function public.set_updated_at();
 create trigger chores_updated before update on public.chores for each row execute function public.set_updated_at();
 create trigger monthly_game_state_updated before update on public.monthly_game_state for each row execute function public.set_updated_at();
-
 create or replace function public.create_house(p_name text)
 returns table (household_id uuid, join_code text)
 language plpgsql
@@ -301,7 +270,6 @@ begin
   return query select v_household_id, v_code;
 end;
 $$;
-
 create or replace function public.join_house(p_code text)
 returns table (household_id uuid, household_name text)
 language plpgsql
@@ -332,7 +300,6 @@ begin
   return query select v_code.household_id, v_name;
 end;
 $$;
-
 create or replace function public.leave_house(p_household_id uuid)
 returns void
 language plpgsql
@@ -346,7 +313,6 @@ begin
   delete from public.household_members where household_id = p_household_id and user_id = auth.uid();
 end;
 $$;
-
 create or replace function public.complete_chore(p_chore_id uuid, p_completion_type text default 'quick')
 returns table (points_awarded integer, floors_awarded integer, full_clean_required boolean)
 language plpgsql
@@ -401,7 +367,6 @@ begin
   return query select v_points, v_floors, (v_quick_count >= v_chore.full_clean_threshold);
 end;
 $$;
-
 revoke all on function public.create_house(text) from public;
 revoke all on function public.join_house(text) from public;
 revoke all on function public.leave_house(uuid) from public;
@@ -410,7 +375,6 @@ grant execute on function public.create_house(text) to authenticated;
 grant execute on function public.join_house(text) to authenticated;
 grant execute on function public.leave_house(uuid) to authenticated;
 grant execute on function public.complete_chore(uuid, text) to authenticated;
-
 create or replace function public.notify_chore_completion()
 returns trigger
 language plpgsql
@@ -433,9 +397,7 @@ begin
   return new;
 end;
 $$;
-
 create trigger chore_completion_notification after insert on public.chore_completions for each row execute function public.notify_chore_completion();
-
 -- Enable the tables used by live household screens for Supabase Realtime.
 do $$
 declare
@@ -454,5 +416,4 @@ begin
   end if;
 end;
 $$;
-
 commit;
