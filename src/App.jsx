@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import './features/adultFeatures.css'
 import { useTaskTower } from './context/TaskTowerContext.jsx'
 import { LoginPage, RegisterPage } from './pages/AuthPages.jsx'
 import { ChoreDashboardPage, ChoreDetailsPage, ChoreEditorPage } from './pages/ChorePages.jsx'
