@@ -15,15 +15,16 @@ import HouseholdHubPage from './features/households/HouseholdHubPage.jsx'
 import ActivityPage from './features/activity/ActivityPage.jsx'
 
 function StartPage() {
-  const { activeHouse, user, authReady } = useTaskTower()
+  const { activeHouse, user, authReady, isSupabaseConfigured } = useTaskTower()
   if (!authReady) return <div className="app-shell"><section className="mobile-screen route-loading"><span className="route-loading__mark">D</span><p>Opening Dwellio…</p></section></div>
+  if (isSupabaseConfigured && !user) return <Navigate to="/login" replace />
   const justLoggedIn = sessionStorage.getItem('tasktower.justLoggedIn')
   if (justLoggedIn) {
     sessionStorage.removeItem('tasktower.justLoggedIn')
     return <Navigate to={activeHouse ? `/house/${activeHouse.id}` : '/menu'} replace />
   }
   if (activeHouse) return <Navigate to={`/house/${activeHouse.id}`} replace />
-  return <Navigate to={user ? '/menu' : '/login'} replace />
+  return <Navigate to="/menu" replace />
 }
 
 function App() {
