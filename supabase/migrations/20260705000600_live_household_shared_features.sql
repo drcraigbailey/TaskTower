@@ -1,6 +1,102 @@
 -- Replace seeded client-only household features with persistent, RLS-protected data.
+-- Older TaskTower migrations created communication tables with a different shape.
+-- Preserve those tables in a private legacy schema before creating the canonical live schema.
 
 begin;
+
+create schema if not exists tasktower_legacy;
+revoke all on schema tasktower_legacy from public, anon, authenticated;
+
+do $$
+begin
+  if to_regclass('public.household_shopping_items') is not null and (
+    exists (
+      select 1
+      from unnest(array['id','household_id','name','detail','category','state','created_by','purchased_by','purchased_at','created_at','updated_at']) expected(column_name)
+      where not exists (
+        select 1
+        from information_schema.columns c
+        where c.table_schema = 'public'
+          and c.table_name = 'household_shopping_items'
+          and c.column_name = expected.column_name
+      )
+    )
+    or exists (
+      select 1
+      from information_schema.columns c
+      where c.table_schema = 'public'
+        and c.table_name = 'household_shopping_items'
+        and c.is_nullable = 'NO'
+        and c.column_default is null
+        and c.column_name <> all(array['household_id','name','created_by'])
+    )
+  ) then
+    if to_regclass('tasktower_legacy.household_shopping_items_pre_live') is not null then
+      raise exception 'A legacy household_shopping_items backup already exists; inspect tasktower_legacy before retrying.';
+    end if;
+    alter table public.household_shopping_items set schema tasktower_legacy;
+    alter table tasktower_legacy.household_shopping_items rename to household_shopping_items_pre_live;
+  end if;
+
+  if to_regclass('public.household_messages') is not null and (
+    exists (
+      select 1
+      from unnest(array['id','household_id','author_id','body','created_at']) expected(column_name)
+      where not exists (
+        select 1
+        from information_schema.columns c
+        where c.table_schema = 'public'
+          and c.table_name = 'household_messages'
+          and c.column_name = expected.column_name
+      )
+    )
+    or exists (
+      select 1
+      from information_schema.columns c
+      where c.table_schema = 'public'
+        and c.table_name = 'household_messages'
+        and c.is_nullable = 'NO'
+        and c.column_default is null
+        and c.column_name <> all(array['household_id','author_id','body'])
+    )
+  ) then
+    if to_regclass('tasktower_legacy.household_messages_pre_live') is not null then
+      raise exception 'A legacy household_messages backup already exists; inspect tasktower_legacy before retrying.';
+    end if;
+    alter table public.household_messages set schema tasktower_legacy;
+    alter table tasktower_legacy.household_messages rename to household_messages_pre_live;
+  end if;
+
+  if to_regclass('public.household_notices') is not null and (
+    exists (
+      select 1
+      from unnest(array['id','household_id','author_id','title','body','priority','expires_at','created_at','updated_at']) expected(column_name)
+      where not exists (
+        select 1
+        from information_schema.columns c
+        where c.table_schema = 'public'
+          and c.table_name = 'household_notices'
+          and c.column_name = expected.column_name
+      )
+    )
+    or exists (
+      select 1
+      from information_schema.columns c
+      where c.table_schema = 'public'
+        and c.table_name = 'household_notices'
+        and c.is_nullable = 'NO'
+        and c.column_default is null
+        and c.column_name <> all(array['household_id','author_id','title','body'])
+    )
+  ) then
+    if to_regclass('tasktower_legacy.household_notices_pre_live') is not null then
+      raise exception 'A legacy household_notices backup already exists; inspect tasktower_legacy before retrying.';
+    end if;
+    alter table public.household_notices set schema tasktower_legacy;
+    alter table tasktower_legacy.household_notices rename to household_notices_pre_live;
+  end if;
+end;
+$$;
 
 create table if not exists public.household_shopping_items (
   id uuid primary key default gen_random_uuid(),
