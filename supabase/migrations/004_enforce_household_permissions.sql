@@ -1,7 +1,69 @@
--- Enforce the household permission switches at the database boundary.
+-- Enforce household permissions and recurring task timing at the database boundary.
 -- Apply after 003_wire_household_features.sql.
 
 begin;
+
+create or replace function public.calculate_chore_next_due(
+  p_frequency_type text,
+  p_frequency_interval integer,
+  p_frequency_unit text,
+  p_from timestamptz
+)
+returns timestamptz
+language sql
+immutable
+set search_path = public
+as $$
+  select case p_frequency_type
+    when 'daily' then p_from + make_interval(days => greatest(coalesce(p_frequency_interval, 1), 1))
+    when 'weekly' then p_from + make_interval(weeks => greatest(coalesce(p_frequency_interval, 1), 1))
+    when 'fortnightly' then p_from + make_interval(weeks => greatest(coalesce(p_frequency_interval, 1), 1) * 2)
+    when 'monthly' then p_from + make_interval(months => greatest(coalesce(p_frequency_interval, 1), 1))
+    when 'custom_days' then p_from + make_interval(days => greatest(coalesce(p_frequency_interval, 1), 1))
+    when 'custom_interval' then p_from + case p_frequency_unit
+      when 'weeks' then make_interval(weeks => greatest(coalesce(p_frequency_interval, 1), 1))
+      when 'months' then make_interval(months => greatest(coalesce(p_frequency_interval, 1), 1))
+      else make_interval(days => greatest(coalesce(p_frequency_interval, 1), 1))
+    end
+    else p_from + interval '1 week'
+  end;
+$$;
+
+create or replace function public.set_chore_next_due()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT'
+     or new.frequency_type is distinct from old.frequency_type
+     or new.frequency_interval is distinct from old.frequency_interval
+     or new.frequency_unit is distinct from old.frequency_unit
+     or new.last_completed_at is distinct from old.last_completed_at then
+    new.next_due_at := public.calculate_chore_next_due(
+      new.frequency_type,
+      new.frequency_interval,
+      new.frequency_unit,
+      coalesce(new.last_completed_at, new.created_at, now())
+    );
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists chores_set_next_due on public.chores;
+create trigger chores_set_next_due
+before insert or update on public.chores
+for each row execute function public.set_chore_next_due();
+
+update public.chores
+set next_due_at = public.calculate_chore_next_due(
+  frequency_type,
+  frequency_interval,
+  frequency_unit,
+  coalesce(last_completed_at, created_at, now())
+)
+where next_due_at is null;
 
 create or replace function public.household_permission(
   p_household_id uuid,
