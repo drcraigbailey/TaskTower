@@ -1,4 +1,4 @@
-import { Bell, ChevronRight, Copy, DoorOpen, Home, LogOut, MessageCircle, Moon, Save, ShieldCheck, ShoppingBasket, SlidersHorizontal, UserRound, Users } from 'lucide-react'
+import { Bell, Camera, ChevronRight, Copy, DoorOpen, Home, ImagePlus, LogOut, MessageCircle, Moon, Save, ShieldCheck, ShoppingBasket, SlidersHorizontal, UserMinus, UserRound, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { MemberAvatar } from '../../components/adult/AdultUi.jsx'
@@ -11,27 +11,38 @@ function SettingToggle({ label, text, checked, disabled, onChange, icon: Icon })
   return <div className="household-setting-row"><span className="settings-icon"><Icon size={19} /></span><span><strong>{label}</strong><small>{text}</small></span><button type="button" className={`toggle ${checked ? 'active' : ''}`} onClick={() => onChange(!checked)} aria-pressed={checked} disabled={disabled}><i /></button></div>
 }
 
+function useImagePreview(file) {
+  const [url, setUrl] = useState('')
+  useEffect(() => {
+    if (!file) { setUrl(''); return undefined }
+    const next = URL.createObjectURL(file)
+    setUrl(next)
+    return () => URL.revokeObjectURL(next)
+  }, [file])
+  return url
+}
+
 export default function AdultSettingsPage() {
   const navigate = useNavigate()
-  const { activeHouse, profile, logout, leaveHouse, updateHousehold, theme, setTheme, showToast } = useTaskTower()
+  const { activeHouse, profile, logout, leaveHouse, removeHouseholdMember, updateHousehold, theme, setTheme, showToast } = useTaskTower()
   const { householdSettings, membershipRole, canManageHousehold, saveHouseholdSettings } = useAdultHousehold()
   const [draft, setDraft] = useState(householdSettings)
   const [houseName, setHouseName] = useState(activeHouse?.name || '')
   const [saving, setSaving] = useState(false)
+  const [removingId, setRemovingId] = useState('')
 
   useEffect(() => setDraft(householdSettings), [householdSettings])
   useEffect(() => setHouseName(activeHouse?.name || ''), [activeHouse?.name])
   if (!activeHouse) return <Navigate to="/menu" replace />
 
   const canRenameHousehold = membershipRole === 'owner'
+  const canRemoveMembers = membershipRole === 'owner'
   const signOut = async () => { await logout(); navigate('/login') }
   const setPermission = (name, value) => setDraft((current) => ({ ...current, permissions: { ...current.permissions, [name]: value } }))
   const save = async () => {
     setSaving(true)
     const settingsSaved = await saveHouseholdSettings(draft)
-    const nameSaved = !canRenameHousehold || houseName.trim() === activeHouse.name
-      ? true
-      : await updateHousehold({ name: houseName })
+    const nameSaved = !canRenameHousehold || houseName.trim() === activeHouse.name ? true : await updateHousehold({ name: houseName })
     setSaving(false)
     if (!settingsSaved || !nameSaved) return
   }
@@ -47,18 +58,38 @@ export default function AdultSettingsPage() {
     const left = await leaveHouse()
     if (left) navigate('/menu')
   }
+  const removeMember = async (member) => {
+    if (!canRemoveMembers || member.id === activeHouse.ownerId) return
+    if (!window.confirm(`Remove ${member.username} from ${activeHouse.name}?`)) return
+    setRemovingId(member.id)
+    await removeHouseholdMember(member.id)
+    setRemovingId('')
+  }
 
   return (
     <AppShell>
       <section className="mobile-screen adult-settings with-bottom-space">
         <ScreenHeader title="Settings" subtitle={activeHouse.name} />
-        <section className="adult-profile-card"><MemberAvatar name={profile.username} size="lg" online /><div><small>Your profile</small><h1>{profile.username}</h1><p>{membershipRole.charAt(0).toUpperCase() + membershipRole.slice(1)} · {activeHouse.name}</p></div><button onClick={() => navigate('/settings')} aria-label="Edit profile"><UserRound size={18} /></button></section>
+        <section className="adult-profile-card"><MemberAvatar name={profile.username} image={profile.image} size="lg" online /><div><small>Your profile</small><h1>{profile.username}</h1><p>{membershipRole.charAt(0).toUpperCase() + membershipRole.slice(1)} · {activeHouse.name}</p></div><button onClick={() => navigate('/settings')} aria-label="Edit profile"><UserRound size={18} /></button></section>
 
         <section className="adult-panel household-details-panel">
           <div className="settings-section-heading"><Home size={20} /><div><small>Household</small><h2>Details and invitations</h2></div></div>
           <label className="field"><span>Household name</span><input value={houseName} onChange={(event) => setHouseName(event.target.value)} disabled={!canRenameHousehold} minLength="2" maxLength="80" /></label>
           <div className="invite-code-row"><span><small>Invite code</small><strong>{activeHouse.joinCode}</strong></span><button type="button" onClick={copyInvite}><Copy size={17} /> Copy</button></div>
-          <p className="settings-helper-copy">{activeHouse.members.length} of 10 household places are currently in use. Only the owner can rename the household.</p>
+          <p className="settings-helper-copy">{activeHouse.members.length} of 10 household places are currently in use. Only the owner can rename the household or remove another member.</p>
+        </section>
+
+        <section className="adult-panel member-management-panel">
+          <div className="settings-section-heading"><Users size={20} /><div><small>Household members</small><h2>People in this home</h2></div></div>
+          <div className="member-management-list">
+            {activeHouse.members.map((member) => (
+              <div className="member-management-row" key={member.id}>
+                <MemberAvatar name={member.username} image={member.image} online />
+                <span><strong>{member.username}</strong><small>{member.role || 'member'} · {member.points || 0} points</small></span>
+                {canRemoveMembers && member.id !== activeHouse.ownerId && <button className="member-remove-button" onClick={() => removeMember(member)} disabled={removingId === member.id}><UserMinus size={17} />{removingId === member.id ? 'Removing…' : 'Remove'}</button>}
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode on this device</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section>
@@ -81,7 +112,6 @@ export default function AdultSettingsPage() {
         </section>
 
         {canManageHousehold ? <button className="primary-button settings-save-button" onClick={save} disabled={saving || (canRenameHousehold && houseName.trim().length < 2)}><Save size={18} /> {saving ? 'Saving…' : 'Save household settings'}</button> : <div className="adult-owner-note"><ShieldCheck size={19} /><span><strong>Managed by household admins</strong><small>You can view these settings, but only an owner or admin can change them.</small></span></div>}
-
         <button className="adult-hub-settings" onClick={() => navigate('/settings')}><UserRound size={19} /> Personal account settings <ChevronRight size={18} /></button>
         {membershipRole !== 'owner' && <button className="danger-button" onClick={leave}><DoorOpen size={18} /> Leave household</button>}
         <button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button>
@@ -95,25 +125,35 @@ export function AdultProfileSettingsPage() {
   const navigate = useNavigate()
   const { profile, setProfile, logout, theme, setTheme, showToast } = useTaskTower()
   const [username, setUsername] = useState(profile.username || '')
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [removeAvatar, setRemoveAvatar] = useState(false)
   const [saving, setSaving] = useState(false)
+  const preview = useImagePreview(avatarFile)
+  const image = removeAvatar ? '' : preview || profile.image || ''
   const signOut = async () => { await logout(); navigate('/login') }
   const saveProfile = async (event) => {
     event.preventDefault()
     const cleanName = username.trim()
     if (!cleanName) return
     setSaving(true)
-    const saved = await setProfile({ ...profile, username: cleanName })
+    const saved = await setProfile({ username: cleanName, avatarFile, removeAvatar })
     setSaving(false)
-    if (saved) showToast('Profile updated.')
+    if (saved) {
+      setAvatarFile(null)
+      setRemoveAvatar(false)
+      showToast('Profile updated.')
+    }
   }
 
   return (
     <AppShell>
       <section className="mobile-screen adult-settings">
         <ScreenHeader title="Account settings" back="/menu" />
-        <section className="adult-profile-card"><MemberAvatar name={username || profile.username} size="lg" online /><div><small>Your profile</small><h1>{username || profile.username}</h1><p>Personal account</p></div><UserRound size={18} /></section>
+        <section className="adult-profile-card"><MemberAvatar name={username || profile.username} image={image} size="lg" online /><div><small>Your profile</small><h1>{username || profile.username}</h1><p>Personal account</p></div><Camera size={18} /></section>
         <form className="adult-panel adult-profile-form" onSubmit={saveProfile}>
           <label className="field"><span>Display name</span><input value={username} onChange={(event) => setUsername(event.target.value)} maxLength="40" required /></label>
+          <label className="image-picker"><span className="image-picker__preview"><MemberAvatar name={username || profile.username} image={image} size="lg" /></span><span><strong><ImagePlus size={17} /> Choose profile picture</strong><small>JPG, PNG, WebP or GIF, up to 5 MB.</small></span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => { setAvatarFile(event.target.files?.[0] || null); setRemoveAvatar(false) }} /></label>
+          {(profile.image || avatarFile) && <button type="button" className="secondary-button" onClick={() => { setAvatarFile(null); setRemoveAvatar(true) }}>Remove profile picture</button>}
           <button className="primary-button" disabled={saving}><Save size={18} /> {saving ? 'Saving…' : 'Save profile'}</button>
         </form>
         <section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode on this device</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section>
