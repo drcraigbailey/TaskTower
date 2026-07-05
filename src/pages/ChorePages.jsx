@@ -165,12 +165,13 @@ export function ChoreEditorPage() {
 export function ChoreDetailsPage() {
   const navigate = useNavigate()
   const { houseId, choreId } = useParams()
-  const { chores, completeChore } = useTaskTower()
+  const { activeHouse, chores, completeChore } = useTaskTower()
   const { householdSettings, canManageHousehold } = useAdultHousehold()
   const chore = chores.find((item) => item.id === choreId)
   const [celebrating, setCelebrating] = useState(false)
   const [completing, setCompleting] = useState(false)
   const canComplete = canManageHousehold || householdSettings.permissions.members_complete_tasks
+  const canEdit = canManageHousehold || householdSettings.permissions.members_add_tasks
 
   const progress = useMemo(() => chore ? Math.min(100, (chore.quickCount / chore.fullCleanThreshold) * 100) : 0, [chore])
   if (!chore) return <Navigate to={`/house/${houseId}/chores`} replace />
@@ -189,7 +190,7 @@ export function ChoreDetailsPage() {
   return (
     <AppShell>
       <section className={`mobile-screen chore-detail-screen ${celebrating ? 'is-celebrating' : ''}`}>
-        <ScreenHeader title={chore.name} back={`/house/${houseId}/chores`} actions={<button className="text-button" onClick={() => navigate(`/house/${houseId}/chores/${chore.id}/edit`)}>Edit</button>} />
+        <ScreenHeader title={chore.name} back={`/house/${houseId}/chores`} actions={canEdit ? <button className="text-button" onClick={() => navigate(`/house/${houseId}/chores/${chore.id}/edit`)}>Edit</button> : null} />
         <div className={`chore-hero chore-hero--${meta.tone}`}><span className="adult-detail-icon"><CategoryGlyph category={chore.category} /></span><div><small>{[chore.room, chore.category].filter(Boolean).join(' · ')}</small><strong>{chore.dueLabel}</strong></div></div>
         <div className="clean-gauge" style={{ '--progress': `${progress * 3.6}deg` }}>
           <div><strong>{chore.quickCount} / {chore.fullCleanThreshold}</strong><span>quick cleans used</span></div>
