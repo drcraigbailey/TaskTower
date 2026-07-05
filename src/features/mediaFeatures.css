@@ -1,0 +1,161 @@
+.image-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 76px;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 15px;
+  background: var(--surface-soft);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.image-picker > span { display: block; }
+.image-picker > span:nth-child(2) { flex: 1; min-width: 0; }
+.image-picker strong,
+.image-picker small { display: flex; align-items: center; gap: 6px; }
+.image-picker strong { font-size: 13px; }
+.image-picker small { margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.image-picker input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.image-picker__preview {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  display: grid !important;
+  place-items: center;
+  border-radius: 14px;
+  color: var(--purple-deep);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.image-picker__preview img,
+.notice-media,
+.message-media,
+.task-detail-media,
+.message-image-preview img,
+.category-icon img,
+.adult-task-icon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.image-picker--compact { min-height: 64px; }
+.image-picker--compact .image-picker__preview { width: 46px; height: 46px; flex-basis: 46px; border-radius: 12px; }
+.task-image-picker { margin-top: 2px; }
+.image-remove-action { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+
+.member-management-panel { padding: 16px; }
+.member-management-list { display: grid; gap: 9px; margin-top: 14px; }
+.member-management-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+.member-management-row > span:nth-child(2) { flex: 1; min-width: 0; }
+.member-management-row strong,
+.member-management-row small { display: block; }
+.member-management-row strong { overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.member-management-row small { margin-top: 2px; color: var(--muted); font-size: 9px; text-transform: capitalize; }
+.member-remove-button {
+  min-height: 34px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(192, 62, 62, .18);
+  border-radius: 10px;
+  color: #b63d3d;
+  background: rgba(255, 88, 88, .08);
+  font-size: 9px;
+  font-weight: 850;
+}
+.member-remove-button:disabled { opacity: .55; cursor: wait; }
+
+.notice-media {
+  max-height: 260px;
+  margin-top: 10px;
+  border-radius: 13px;
+  border: 1px solid var(--line);
+}
+.notice-media--compact { max-width: 130px; max-height: 88px; }
+
+.message-media {
+  max-width: min(280px, 100%);
+  max-height: 320px;
+  margin-top: 8px;
+  border-radius: 13px;
+}
+.message-image-preview {
+  position: relative;
+  width: 110px;
+  height: 82px;
+  margin: 8px 0;
+  border-radius: 13px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.message-image-preview button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: rgba(24, 24, 28, .72);
+}
+.message-image-button {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--purple-deep);
+  background: var(--surface-soft);
+  overflow: hidden;
+  cursor: pointer;
+}
+.message-image-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.task-detail-media {
+  width: 100%;
+  max-height: 300px;
+  margin: 8px 0 13px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+}
+.category-icon img { border-radius: inherit; }
+.adult-task-icon img { border-radius: 10px; }
+
+.secondary-button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--surface-raised);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.adult-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: inherit;
+}
