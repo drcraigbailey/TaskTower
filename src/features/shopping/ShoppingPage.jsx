@@ -1,42 +1,89 @@
-import { Check, MoreHorizontal, Package, Plus, Search, ShoppingBasket } from 'lucide-react'
+import { Check, Package, Plus, Search, ShoppingBasket, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { AdultSectionHeader, EmptyState, StatusBadge } from '../../components/adult/AdultUi.jsx'
 import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
 import BottomNav from '../../components/BottomNav.jsx'
-import { shoppingSeed } from '../../data/adultDemoData.js'
 import { useTaskTower } from '../../context/TaskTowerContext.jsx'
 
 const tabs = [['low', 'Running low'], ['out', 'Out'], ['list', 'Shopping list']]
+const emptyForm = { name: '', detail: '', category: 'General', state: 'list' }
 
 export default function ShoppingPage() {
-  const { activeHouse, showToast } = useTaskTower()
-  const [items, setItems] = useState(shoppingSeed)
+  const { activeHouse, addShoppingItem, deleteShoppingItem, markShoppingPurchased, shoppingItems } = useTaskTower()
   const [tab, setTab] = useState('low')
   const [query, setQuery] = useState('')
-  const visible = useMemo(() => items.filter((item) => item.state === tab && item.name.toLowerCase().includes(query.toLowerCase())), [items, query, tab])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState(emptyForm)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const visible = useMemo(() => shoppingItems.filter((item) => item.state === tab && item.name.toLowerCase().includes(query.toLowerCase())), [shoppingItems, query, tab])
   if (!activeHouse) return null
-  const purchase = (id) => {
-    setItems((current) => current.filter((item) => item.id !== id))
-    showToast('Marked as purchased.')
+
+  const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
+
+  const submit = async (event) => {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    try {
+      await addShoppingItem(form)
+      setTab(form.state)
+      setForm(emptyForm)
+      setShowForm(false)
+    } catch (err) {
+      setError(err.message || 'The shopping item could not be saved.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const purchase = async (id) => {
+    setError('')
+    try {
+      await markShoppingPurchased(id)
+    } catch (err) {
+      setError(err.message || 'The item could not be updated.')
+    }
+  }
+
+  const remove = async (id) => {
+    setError('')
+    try {
+      await deleteShoppingItem(id)
+    } catch (err) {
+      setError(err.message || 'The item could not be removed.')
+    }
   }
 
   return (
     <AppShell>
       <section className="mobile-screen adult-shopping with-bottom-space">
-        <ScreenHeader title="Shopping" subtitle={activeHouse.name} actions={<button className="add-button" onClick={() => showToast('Add-item form is ready for Supabase wiring.')} aria-label="Add shopping item"><Plus size={20} /></button>} />
+        <ScreenHeader title="Shopping" subtitle={activeHouse.name} actions={<button className="add-button" onClick={() => setShowForm((value) => !value)} aria-label="Add shopping item">{showForm ? <X size={20} /> : <Plus size={20} />}</button>} />
+        {showForm && <form className="form-stack editor-form" onSubmit={submit}>
+          <label className="field"><span>Item</span><input name="name" value={form.name} onChange={update} placeholder="Milk" required /></label>
+          <label className="field"><span>Details</span><input name="detail" value={form.detail} onChange={update} placeholder="2 litres, semi-skimmed" /></label>
+          <div className="form-grid">
+            <label className="field"><span>Category</span><input name="category" value={form.category} onChange={update} placeholder="Groceries" /></label>
+            <label className="field"><span>Status</span><select name="state" value={form.state} onChange={update}><option value="low">Running low</option><option value="out">Out</option><option value="list">Shopping list</option></select></label>
+          </div>
+          <button className="primary-button" disabled={busy}>{busy ? 'Saving…' : 'Add item'}</button>
+        </form>}
+        {error && <div className="inline-message inline-message--error">{error}</div>}
         <label className="adult-search"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shopping items" /></label>
-        <div className="adult-tabs" role="tablist">{tabs.map(([value, label]) => <button className={tab === value ? 'active' : ''} onClick={() => setTab(value)} key={value}>{label}<span>{items.filter((item) => item.state === value).length}</span></button>)}</div>
+        <div className="adult-tabs" role="tablist">{tabs.map(([value, label]) => <button className={tab === value ? 'active' : ''} onClick={() => setTab(value)} key={value}>{label}<span>{shoppingItems.filter((item) => item.state === value).length}</span></button>)}</div>
         <section className="adult-panel shopping-panel">
-          <AdultSectionHeader eyebrow={tabs.find(([value]) => value === tab)?.[1]} title={tab === 'list' ? 'Items to buy' : 'Household stock'} action={<MoreHorizontal size={19} />} />
+          <AdultSectionHeader eyebrow={tabs.find(([value]) => value === tab)?.[1]} title={tab === 'list' ? 'Items to buy' : 'Household stock'} />
           {visible.length ? <div className="shopping-list">{visible.map((item) => (
             <article className="shopping-row" key={item.id}>
               <span className="shopping-item-icon"><Package size={19} /></span>
-              <div><strong>{item.name}</strong><small>{item.detail} · {item.category}</small></div>
-              {tab === 'list' ? <button className="purchase-button" onClick={() => purchase(item.id)} aria-label={`Mark ${item.name} purchased`}><Check size={18} /></button> : <StatusBadge status={tab === 'out' ? 'overdue' : 'attention'} label={tab === 'out' ? 'Out' : 'Low'} />}
+              <div><strong>{item.name}</strong><small>{item.detail || 'No extra details'} · {item.category}</small></div>
+              {tab === 'list'
+                ? <button className="purchase-button" onClick={() => purchase(item.id)} aria-label={`Mark ${item.name} purchased`}><Check size={18} /></button>
+                : <><StatusBadge status={tab === 'out' ? 'overdue' : 'attention'} label={tab === 'out' ? 'Out' : 'Low'} /><button className="purchase-button" onClick={() => remove(item.id)} aria-label={`Remove ${item.name}`}><Trash2 size={16} /></button></>}
             </article>
           ))}</div> : <EmptyState icon={ShoppingBasket} title="Nothing here" text="There are no matching items in this section." action={<button className="secondary-button" onClick={() => setQuery('')}>Clear search</button>} />}
         </section>
-        <button className="primary-button shopping-add" onClick={() => showToast('Add-item form is ready for Supabase wiring.')}><Plus size={18} /> Add item</button>
+        <button className="primary-button shopping-add" onClick={() => setShowForm(true)}><Plus size={18} /> Add item</button>
         <BottomNav />
       </section>
     </AppShell>

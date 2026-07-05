@@ -1,34 +1,90 @@
-import { Accessibility, Bell, ChevronRight, Download, Home, LogOut, MessageCircle, Moon, ShieldCheck, ShoppingBasket, SlidersHorizontal, UserRound, Users } from 'lucide-react'
+import { Copy, Home, LogOut, Moon, Save, ShieldCheck, UserRound, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MemberAvatar } from '../../components/adult/AdultUi.jsx'
 import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
 import BottomNav from '../../components/BottomNav.jsx'
 import { useTaskTower } from '../../context/TaskTowerContext.jsx'
 
-const rows = [
-  [Home, 'Household details', 'Name, icon and invitation settings'],
-  [Users, 'Members and permissions', 'Roles for up to 10 household members'],
-  [SlidersHorizontal, 'Task defaults', 'Schedules, urgency and full-clean rules'],
-  [ShoppingBasket, 'Shopping settings', 'Categories, assignments and favourites'],
-  [MessageCircle, 'Messages and notices', 'Communication and acknowledgement rules'],
-  [Bell, 'Notifications', 'Quiet hours and per-household alerts'],
-  [Accessibility, 'Accessibility', 'Text size, motion and contrast'],
-  [Download, 'Data and export', 'Activity export and account data'],
-]
-
 export default function AdultSettingsPage() {
   const navigate = useNavigate()
-  const { activeHouse, profile, logout, theme, setTheme, showToast } = useTaskTower()
+  const { activeHouse, leaveHouse, logout, profile, showToast, theme, setTheme, updateHouse } = useTaskTower()
+  const [form, setForm] = useState({ name: '', towerHeight: 20, monthlyResetDay: 1 })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!activeHouse) return
+    setForm({
+      name: activeHouse.name,
+      towerHeight: activeHouse.towerHeight || 20,
+      monthlyResetDay: activeHouse.monthlyResetDay || 1,
+    })
+  }, [activeHouse])
+
   if (!activeHouse) return null
   const signOut = async () => { await logout(); navigate('/login') }
+  const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.type === 'number' ? Number(event.target.value) : event.target.value }))
+
+  const save = async (event) => {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      await updateHouse(form)
+    } catch (err) {
+      setError(err.message || 'The household changes could not be saved.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const copyCode = async () => {
+    if (!activeHouse.joinCode) return
+    try {
+      await navigator.clipboard.writeText(activeHouse.joinCode)
+      showToast('Invite code copied.')
+    } catch {
+      showToast(`Invite code: ${activeHouse.joinCode}`, 'neutral')
+    }
+  }
+
+  const leave = async () => {
+    setError('')
+    try {
+      await leaveHouse(activeHouse.id)
+      navigate('/menu')
+    } catch (err) {
+      setError(err.message || 'The household could not be left.')
+    }
+  }
+
   return (
     <AppShell>
       <section className="mobile-screen adult-settings with-bottom-space">
         <ScreenHeader title="Settings" subtitle={activeHouse.name} />
-        <section className="adult-profile-card"><MemberAvatar name={profile.username} size="lg" online /><div><small>Your profile</small><h1>{profile.username}</h1><p>Owner · {activeHouse.name}</p></div><button onClick={() => navigate('/settings')}><UserRound size={18} /></button></section>
+        <section className="adult-profile-card"><MemberAvatar name={profile.username} size="lg" online /><div><small>Your profile</small><h1>{profile.username}</h1><p>{activeHouse.role === 'owner' ? 'Owner' : 'Member'} · {activeHouse.name}</p></div><button onClick={() => navigate('/settings')}><UserRound size={18} /></button></section>
+
+        <form className="form-stack editor-form" onSubmit={save}>
+          <div className="activity-title"><Home size={20} /><h2>Household details</h2></div>
+          <label className="field"><span>Household name</span><input name="name" value={form.name} onChange={update} minLength="2" maxLength="80" required disabled={activeHouse.role !== 'owner'} /></label>
+          <div className="form-grid">
+            <label className="field"><span>Tower height</span><input name="towerHeight" type="number" value={form.towerHeight} onChange={update} min="5" max="100" disabled={activeHouse.role !== 'owner'} /></label>
+            <label className="field"><span>Monthly reset day</span><input name="monthlyResetDay" type="number" value={form.monthlyResetDay} onChange={update} min="1" max="28" disabled={activeHouse.role !== 'owner'} /></label>
+          </div>
+          {activeHouse.joinCode && <label className="field"><span>Invite code</span><div className="field-control"><input value={activeHouse.joinCode} readOnly /><button type="button" onClick={copyCode} aria-label="Copy invite code"><Copy size={18} /></button></div></label>}
+          {error && <div className="inline-message inline-message--error">{error}</div>}
+          {activeHouse.role === 'owner' && <button className="primary-button" disabled={saving}><Save size={18} /> {saving ? 'Saving…' : 'Save household changes'}</button>}
+        </form>
+
+        <section className="adult-panel">
+          <div className="activity-title"><Users size={20} /><h2>Members</h2></div>
+          <div className="adult-member-row">{activeHouse.members.map((member) => <div key={member.id}><MemberAvatar name={member.username} online /><strong>{member.username}</strong><small>{member.role}</small></div>)}</div>
+        </section>
+
         <section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section>
-        <div className="adult-settings-list">{rows.map(([Icon, title, text]) => <button key={title} onClick={() => showToast(`${title} settings will use the shared household permissions service.`)}><span><Icon size={20} /></span><div><strong>{title}</strong><small>{text}</small></div><ChevronRight size={18} /></button>)}</div>
-        <div className="adult-owner-note"><ShieldCheck size={19} /><span><strong>Household owner</strong><small>You can manage roles, permissions and ownership transfer.</small></span></div>
+        <div className="adult-owner-note"><ShieldCheck size={19} /><span><strong>{activeHouse.role === 'owner' ? 'Household owner' : 'Household member'}</strong><small>{activeHouse.role === 'owner' ? 'Household changes are saved for everyone.' : 'Only the owner can change shared household details.'}</small></span></div>
+        {activeHouse.role !== 'owner' && <button className="danger-button" onClick={leave}>Leave household</button>}
         <button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button>
         <BottomNav />
       </section>
@@ -38,7 +94,25 @@ export default function AdultSettingsPage() {
 
 export function AdultProfileSettingsPage() {
   const navigate = useNavigate()
-  const { profile, logout, theme, setTheme, showToast } = useTaskTower()
+  const { logout, profile, setProfile, theme, setTheme } = useTaskTower()
+  const [username, setUsername] = useState(profile.username)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => setUsername(profile.username), [profile.username])
   const signOut = async () => { await logout(); navigate('/login') }
-  return <AppShell><section className="mobile-screen adult-settings"><ScreenHeader title="Account settings" back="/menu" /><section className="adult-profile-card"><MemberAvatar name={profile.username} size="lg" online /><div><small>Your profile</small><h1>{profile.username}</h1><p>Personal account</p></div><button onClick={() => showToast('Profile editing is ready for the existing profile service.')}><UserRound size={18} /></button></section><section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section><div className="adult-settings-list"><button onClick={() => showToast('Notification preferences opened.')}><span><Bell size={20} /></span><div><strong>Notifications</strong><small>Push alerts and quiet hours</small></div><ChevronRight size={18} /></button><button onClick={() => showToast('Accessibility preferences opened.')}><span><Accessibility size={20} /></span><div><strong>Accessibility</strong><small>Text size, motion and contrast</small></div><ChevronRight size={18} /></button><button onClick={() => showToast('Data export opened.')}><span><Download size={20} /></span><div><strong>Privacy and data</strong><small>Export or delete account data</small></div><ChevronRight size={18} /></button></div><button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button></section></AppShell>
+  const save = async (event) => {
+    event.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      await setProfile({ ...profile, username })
+    } catch (err) {
+      setError(err.message || 'The profile could not be saved.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return <AppShell><section className="mobile-screen adult-settings"><ScreenHeader title="Account settings" back="/menu" /><section className="adult-profile-card"><MemberAvatar name={profile.username} size="lg" online /><div><small>Your profile</small><h1>{profile.username}</h1><p>Personal account</p></div><UserRound size={18} /></section><form className="form-stack editor-form" onSubmit={save}><label className="field"><span>Display name</span><input value={username} onChange={(event) => setUsername(event.target.value)} minLength="1" maxLength="40" required /></label>{error && <div className="inline-message inline-message--error">{error}</div>}<button className="primary-button" disabled={saving}><Save size={18} /> {saving ? 'Saving…' : 'Save profile'}</button></form><section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section><button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button></section></AppShell>
 }

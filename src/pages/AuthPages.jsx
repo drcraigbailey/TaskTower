@@ -8,9 +8,10 @@ import { useTaskTower } from '../context/TaskTowerContext.jsx'
 function AuthLayout({ mode }) {
   const isRegister = mode === 'register'
   const navigate = useNavigate()
-  const { activeHouse, login, register, loading, isSupabaseConfigured } = useTaskTower()
+  const { login, register, loading, isSupabaseConfigured } = useTaskTower()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '' })
 
   const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
@@ -18,13 +19,25 @@ function AuthLayout({ mode }) {
   const submit = async (event) => {
     event.preventDefault()
     setError('')
+    setMessage('')
+    if (!isSupabaseConfigured) {
+      setError('This build is not connected to Supabase. Add the live environment values and rebuild the app.')
+      return
+    }
     if (isRegister && form.password !== form.confirm) {
       setError('Those passwords do not match yet.')
       return
     }
     const result = isRegister ? await register(form) : await login(form)
-    if (result.ok) navigate(result.houseId ? `/house/${result.houseId}` : activeHouse ? `/house/${activeHouse.id}` : '/menu')
-    else setError(result.error)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    if (result.needsEmailConfirmation) {
+      setMessage('Account created. Check your email to confirm it, then return here to log in.')
+      return
+    }
+    navigate(result.houseId ? `/house/${result.houseId}` : '/menu')
   }
 
   return (
@@ -77,18 +90,13 @@ function AuthLayout({ mode }) {
               <input name="confirm" type={showPassword ? 'text' : 'password'} value={form.confirm} onChange={update} placeholder="One more time" required />
             </label>
           )}
+          {!isSupabaseConfigured && <div className="inline-message inline-message--error">Live accounts are unavailable because this build has no Supabase environment values.</div>}
           {error && <div className="inline-message inline-message--error">{error}</div>}
-          <button className="primary-button" disabled={loading}>
+          {message && <div className="inline-message inline-message--success">{message}</div>}
+          <button className="primary-button" disabled={loading || !isSupabaseConfigured}>
             {loading ? 'Opening the door…' : isRegister ? 'Create account' : 'Log in'}
           </button>
         </form>
-
-        {!isSupabaseConfigured && (
-          <div className="demo-note">
-            <span>Demo mode</span>
-            <p>Use any email and an 8-character password. Add Supabase keys later for live accounts.</p>
-          </div>
-        )}
 
         <p className="auth-switch">
           {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
