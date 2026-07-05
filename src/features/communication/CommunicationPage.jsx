@@ -1,5 +1,5 @@
-import { BellRing, CheckCircle2, Plus, Send, Trash2, X } from 'lucide-react'
-import { useState } from 'react'
+import { BellRing, CheckCircle2, ImagePlus, Plus, Send, Trash2, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { MemberAvatar, StatusBadge } from '../../components/adult/AdultUi.jsx'
 import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
@@ -9,15 +9,30 @@ import { useTaskTower } from '../../context/TaskTowerContext.jsx'
 
 const emptyNotice = { title: '', body: '', priority: 'normal', expiresAt: '', pinned: false }
 
+function useImagePreview(file) {
+  const [url, setUrl] = useState('')
+  useEffect(() => {
+    if (!file) { setUrl(''); return undefined }
+    const next = URL.createObjectURL(file)
+    setUrl(next)
+    return () => URL.revokeObjectURL(next)
+  }, [file])
+  return url
+}
+
 export default function CommunicationPage() {
   const { activeHouse, user } = useTaskTower()
   const { messages, notices, householdSettings, canManageHousehold, dataLoading, sendMessage, deleteMessage, addNotice, acknowledgeNotice, deleteNotice } = useAdultHousehold()
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = searchParams.get('tab') === 'notices' ? 'notices' : 'messages'
   const [text, setText] = useState('')
+  const [messageImage, setMessageImage] = useState(null)
   const [recipientId, setRecipientId] = useState('')
   const [noticeForm, setNoticeForm] = useState(emptyNotice)
+  const [noticeImage, setNoticeImage] = useState(null)
   const [showNoticeForm, setShowNoticeForm] = useState(false)
+  const messagePreview = useImagePreview(messageImage)
+  const noticePreview = useImagePreview(noticeImage)
 
   if (!activeHouse) return <Navigate to="/menu" replace />
 
@@ -29,10 +44,13 @@ export default function CommunicationPage() {
   const changeTab = (nextTab) => setSearchParams(nextTab === 'notices' ? { tab: 'notices' } : {})
 
   const send = async () => {
-    if (!canMessage || !text.trim()) return
+    if (!canMessage || (!text.trim() && !messageImage)) return
     const targetRecipientId = directMessagingAvailable ? recipientId || null : null
-    const sent = await sendMessage(text, targetRecipientId)
-    if (sent) setText('')
+    const sent = await sendMessage(text, targetRecipientId, messageImage)
+    if (sent) {
+      setText('')
+      setMessageImage(null)
+    }
   }
 
   const updateNotice = (event) => {
@@ -43,9 +61,10 @@ export default function CommunicationPage() {
   const postNotice = async (event) => {
     event.preventDefault()
     if (!canPostNotice) return
-    const saved = await addNotice(noticeForm)
+    const saved = await addNotice({ ...noticeForm, imageFile: noticeImage })
     if (!saved) return
     setNoticeForm(emptyNotice)
+    setNoticeImage(null)
     setShowNoticeForm(false)
   }
 
@@ -66,22 +85,25 @@ export default function CommunicationPage() {
                   <label className="field"><span>Priority</span><select name="priority" value={noticeForm.priority} onChange={updateNotice}><option value="normal">Normal</option><option value="important">Important</option><option value="urgent">Urgent</option></select></label>
                   <label className="field"><span>Expires</span><input type="date" name="expiresAt" value={noticeForm.expiresAt} onChange={updateNotice} /></label>
                 </div>
+                <label className="image-picker image-picker--compact"><span className="image-picker__preview">{noticePreview ? <img src={noticePreview} alt="Notice preview" /> : <ImagePlus size={22} />}</span><span><strong>Add a picture</strong><small>Optional image, up to 5 MB.</small></span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setNoticeImage(event.target.files?.[0] || null)} /></label>
+                {noticeImage && <button type="button" className="secondary-button" onClick={() => setNoticeImage(null)}>Remove picture</button>}
                 <label className="adult-check-row"><input type="checkbox" name="pinned" checked={noticeForm.pinned} onChange={updateNotice} /><span><strong>Pin this notice</strong><small>Keep it at the top of the household board.</small></span></label>
                 <button className="primary-button"><BellRing size={18} /> Post notice</button>
               </form>
             )}
             {!householdSettings.notices_enabled ? <div className="adult-disabled-note">Notices are disabled in household settings.</div> : dataLoading ? <p className="adult-loading-copy">Updating notices…</p> : (
-              <div className="notice-list">{notices.length ? notices.map((notice) => <article className={`adult-notice-card adult-notice-card--${notice.priority}`} key={notice.id}><span><BellRing size={19} /></span><div><div><StatusBadge status={notice.priority === 'urgent' ? 'overdue' : notice.priority === 'important' ? 'attention' : 'current'} label={notice.priority} /><small>{notice.expires === 'No expiry' ? notice.createdLabel : `Expires in ${notice.expires}`}</small></div><h2>{notice.title}</h2><p>{notice.body || 'No extra details.'}</p><footer><MemberAvatar name={notice.author} size="sm" /><span>Posted by {notice.author}</span><div className="notice-actions">{!notice.acknowledged && <button className="notice-ack-button" onClick={() => acknowledgeNotice(notice.id)}><CheckCircle2 size={15} /> Acknowledge</button>}{notice.author === 'You' && <button className="row-delete-button" onClick={() => deleteNotice(notice.id)} aria-label={`Remove ${notice.title}`}><Trash2 size={16} /></button>}</div></footer></div></article>) : <div className="adult-empty-copy"><BellRing size={25} /><h2>No notices yet</h2><p>Important household updates will appear here.</p></div>}</div>
+              <div className="notice-list">{notices.length ? notices.map((notice) => <article className={`adult-notice-card adult-notice-card--${notice.priority}`} key={notice.id}><span><BellRing size={19} /></span><div><div><StatusBadge status={notice.priority === 'urgent' ? 'overdue' : notice.priority === 'important' ? 'attention' : 'current'} label={notice.priority} /><small>{notice.expires === 'No expiry' ? notice.createdLabel : `Expires in ${notice.expires}`}</small></div><h2>{notice.title}</h2><p>{notice.body || 'No extra details.'}</p>{notice.imageUrl && <img className="notice-media" src={notice.imageUrl} alt={notice.title} />}<footer><MemberAvatar name={notice.author} image={notice.authorImage} size="sm" /><span>Posted by {notice.author}</span><div className="notice-actions">{!notice.acknowledged && <button className="notice-ack-button" onClick={() => acknowledgeNotice(notice.id)}><CheckCircle2 size={15} /> Acknowledge</button>}{notice.author === 'You' && <button className="row-delete-button" onClick={() => deleteNotice(notice.id)} aria-label={`Remove ${notice.title}`}><Trash2 size={16} /></button>}</div></footer></div></article>) : <div className="adult-empty-copy"><BellRing size={25} /><h2>No notices yet</h2><p>Important household updates will appear here.</p></div>}</div>
             )}
             {householdSettings.notices_enabled && !canPostNotice && <div className="adult-disabled-note">You can read and acknowledge notices, but your household role cannot post them.</div>}
           </>
         ) : (
           <div className="messages-layout">
             {!householdSettings.messaging_enabled ? <div className="adult-disabled-note">Household messaging is disabled in settings.</div> : <>
-              <div className="message-thread">{dataLoading ? <p className="adult-loading-copy">Updating messages…</p> : messages.length ? messages.map((message) => <article className={`message-row ${message.mine ? 'message-row--mine' : ''}`} key={message.id}>{!message.mine && <MemberAvatar name={message.author} size="sm" online />}<div><small>{message.author} · {message.recipient_id ? 'Direct' : 'Household'} · {message.time}</small><p>{message.body}</p>{message.mine && <span><CheckCircle2 size={12} /> Sent <button className="message-remove-button" onClick={() => deleteMessage(message.id)} aria-label="Remove message"><Trash2 size={13} /></button></span>}</div></article>) : <div className="adult-empty-copy"><Send size={25} /><h2>Start the conversation</h2><p>Messages sent here are shared with the household unless you choose a person directly.</p></div>}</div>
+              <div className="message-thread">{dataLoading ? <p className="adult-loading-copy">Updating messages…</p> : messages.length ? messages.map((message) => <article className={`message-row ${message.mine ? 'message-row--mine' : ''}`} key={message.id}>{!message.mine && <MemberAvatar name={message.author} image={message.authorImage} size="sm" online />}<div><small>{message.author} · {message.recipient_id ? 'Direct' : 'Household'} · {message.time}</small>{message.body && <p>{message.body}</p>}{message.imageUrl && <img className="message-media" src={message.imageUrl} alt="Message attachment" />}{message.mine && <span><CheckCircle2 size={12} /> Sent <button className="message-remove-button" onClick={() => deleteMessage(message.id)} aria-label="Remove message"><Trash2 size={13} /></button></span>}</div></article>) : <div className="adult-empty-copy"><Send size={25} /><h2>Start the conversation</h2><p>Messages sent here are shared with the household unless you choose a person directly.</p></div>}</div>
               {canMessage ? <>
                 {directMessagingAvailable && otherMembers.length > 0 && <label className="field message-target"><span>Send to</span><select value={recipientId} onChange={(event) => setRecipientId(event.target.value)}><option value="">Everyone in the household</option>{otherMembers.map((member) => <option value={member.id} key={member.id}>{member.username}</option>)}</select></label>}
-                <div className="message-composer"><input value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && send()} placeholder={selectedRecipient ? `Message ${selectedRecipient.username}` : 'Message the household'} aria-label={selectedRecipient ? `Message ${selectedRecipient.username}` : 'Message the household'} maxLength="4000" /><button onClick={send} disabled={!text.trim()} aria-label="Send message"><Send size={18} /></button></div>
+                {messagePreview && <div className="message-image-preview"><img src={messagePreview} alt="Message preview" /><button onClick={() => setMessageImage(null)} aria-label="Remove image"><X size={16} /></button></div>}
+                <div className="message-composer"><label className="message-image-button" aria-label="Add image"><ImagePlus size={18} /><input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setMessageImage(event.target.files?.[0] || null)} /></label><input value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && !event.shiftKey && send()} placeholder={selectedRecipient ? `Message ${selectedRecipient.username}` : 'Message the household'} aria-label={selectedRecipient ? `Message ${selectedRecipient.username}` : 'Message the household'} maxLength="4000" /><button onClick={send} disabled={!text.trim() && !messageImage} aria-label="Send message"><Send size={18} /></button></div>
               </> : <div className="adult-disabled-note">You can read messages, but your household role cannot send them.</div>}
             </>}
           </div>
