@@ -1,6 +1,6 @@
 {
   "appId": "app.tasktower.home",
-  "appName": "TaskTower",
+  "appName": "Dwellio",
   "webDir": "dist",
   "plugins": {
     "SplashScreen": {

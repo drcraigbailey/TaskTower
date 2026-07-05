@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">TaskTower</string>
-    <string name="title_activity_main">TaskTower</string>
+    <string name="app_name">Dwellio</string>
+    <string name="title_activity_main">Dwellio</string>
     <string name="package_name">app.tasktower.home</string>
     <string name="custom_url_scheme">app.tasktower.home</string>
 </resources>

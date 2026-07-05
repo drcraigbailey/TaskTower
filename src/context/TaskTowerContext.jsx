@@ -214,19 +214,74 @@ export function TaskTowerProvider({ children }) {
     window.setTimeout(() => setToast(null), 3000)
   }
 
+  const activateHouse = (house, withHaptic = true) => {
+    setActiveHouse(house)
+    localStorage.setItem(ACTIVE_HOUSE_KEY, JSON.stringify(house))
+    Preferences.set({ key: ACTIVE_HOUSE_KEY, value: JSON.stringify(house) })
+    if (withHaptic) haptic('success')
+  }
+
+  const restoreFirstHouseForUser = async (signedInUser) => {
+    if (!supabase || !signedInUser) return activeHouse
+    if (activeHouse?.id && activeHouse.id !== 'demo-house') return activeHouse
+
+    try {
+      const { data: membership, error: membershipError } = await supabase
+        .from('household_members')
+        .select('household_id, role, joined_at')
+        .eq('user_id', signedInUser.id)
+        .order('joined_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (membershipError) throw membershipError
+      if (!membership?.household_id) return null
+
+      const { data: household, error: householdError } = await supabase
+        .from('households')
+        .select('id, name, tower_height, monthly_reset_day')
+        .eq('id', membership.household_id)
+        .maybeSingle()
+      if (householdError) throw householdError
+      if (!household) return null
+
+      const restoredHouse = {
+        ...demoHouse,
+        id: household.id,
+        name: household.name,
+        towerHeight: household.tower_height,
+        members: [{
+          id: signedInUser.id,
+          username: profile.username || signedInUser.user_metadata?.username || 'You',
+          floors: 0,
+          points: 0,
+          avatar: profile.avatar,
+        }],
+      }
+      activateHouse(restoredHouse, false)
+      return restoredHouse
+    } catch (error) {
+      console.warn('Dwellio could not restore the household after sign-in', error)
+      return null
+    }
+  }
+
   const login = async ({ email, password }) => {
     setLoading(true)
     try {
+      let signedInUser
       if (supabase) {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-        setUser(data.user)
+        signedInUser = data.user
+        setUser(signedInUser)
       } else {
-        setUser({ id: 'demo-user', email: email || 'hello@tasktower.app' })
+        signedInUser = { id: 'demo-user', email: email || 'hello@dwellio.app' }
+        setUser(signedInUser)
       }
+      const restoredHouse = await restoreFirstHouseForUser(signedInUser)
       sessionStorage.setItem('tasktower.justLoggedIn', 'true')
       await haptic('success')
-      return { ok: true }
+      return { ok: true, houseId: restoredHouse?.id || activeHouse?.id || null }
     } catch (error) {
       return { ok: false, error: friendlyError(error) }
     } finally {
@@ -265,13 +320,6 @@ export function TaskTowerProvider({ children }) {
     setActiveHouse(null)
     localStorage.removeItem(ACTIVE_HOUSE_KEY)
     Preferences.remove({ key: ACTIVE_HOUSE_KEY })
-  }
-
-  const activateHouse = (house) => {
-    setActiveHouse(house)
-    localStorage.setItem(ACTIVE_HOUSE_KEY, JSON.stringify(house))
-    Preferences.set({ key: ACTIVE_HOUSE_KEY, value: JSON.stringify(house) })
-    haptic('success')
   }
 
   const createHouse = async (name) => {

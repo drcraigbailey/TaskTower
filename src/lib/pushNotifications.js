@@ -36,14 +36,14 @@ export async function initialisePushNotifications(userId) {
     )
     listeners.push(
       await PushNotifications.addListener('registrationError', (error) => {
-        console.warn('TaskTower push registration failed', error)
+        console.warn('Dwellio push registration failed', error)
       }),
     )
 
     await PushNotifications.register()
     return () => listeners.forEach((listener) => listener.remove())
   } catch (error) {
-    console.warn('TaskTower push notifications are unavailable', error)
+    console.warn('Dwellio push notifications are unavailable', error)
     return () => {}
   }
 }

@@ -1,4 +1,4 @@
-import { Bell, Castle, ClipboardCheck, Home, MoreHorizontal } from 'lucide-react'
+import { ClipboardList, Home, MessageCircle, Settings, ShoppingBasket } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTaskTower } from '../context/TaskTowerContext.jsx'
 
@@ -9,10 +9,10 @@ export default function BottomNav() {
   const houseId = activeHouse?.id || 'demo-house'
   const items = [
     { label: 'Home', icon: Home, path: `/house/${houseId}` },
-    { label: 'Chores', icon: ClipboardCheck, path: `/house/${houseId}/chores` },
-    { label: 'Tower', icon: Castle, path: `/house/${houseId}/tower` },
-    { label: 'Alerts', icon: Bell, path: '/notifications' },
-    { label: 'More', icon: MoreHorizontal, path: `/house/${houseId}/settings` },
+    { label: 'Tasks', icon: ClipboardList, path: `/house/${houseId}/chores` },
+    { label: 'Shopping', icon: ShoppingBasket, path: `/house/${houseId}/shopping` },
+    { label: 'Messages', icon: MessageCircle, path: `/house/${houseId}/messages` },
+    { label: 'Settings', icon: Settings, path: `/house/${houseId}/settings` },
   ]
 
   return (

@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Eye, EyeOff, Mail, Sparkles } from 'lucide-react'
+import { CheckCircle2, Eye, EyeOff, Mail, ShieldCheck } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import splashArt from '../assets/game-art/screens/main-menu/main-menu-day.webp'
 import BrandLogo from '../components/BrandLogo.jsx'
 import { AppShell, ThemeToggle } from '../components/AppShell.jsx'
 import { useTaskTower } from '../context/TaskTowerContext.jsx'
@@ -9,7 +8,7 @@ import { useTaskTower } from '../context/TaskTowerContext.jsx'
 function AuthLayout({ mode }) {
   const isRegister = mode === 'register'
   const navigate = useNavigate()
-  const { login, register, loading, isSupabaseConfigured } = useTaskTower()
+  const { activeHouse, login, register, loading, isSupabaseConfigured } = useTaskTower()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '' })
@@ -24,28 +23,29 @@ function AuthLayout({ mode }) {
       return
     }
     const result = isRegister ? await register(form) : await login(form)
-    if (result.ok) navigate('/menu')
+    if (result.ok) navigate(result.houseId ? `/house/${result.houseId}` : activeHouse ? `/house/${activeHouse.id}` : '/menu')
     else setError(result.error)
   }
 
   return (
     <AppShell className="auth-shell">
-      <div className="auth-visual" style={{ backgroundImage: `url(${splashArt})` }}>
+      <div className="auth-visual">
         <div className="auth-brand-panel">
-          <BrandLogo light />
-          <h2>Do chores. Climb together.</h2>
-          <p>A friendly little race to make home life lighter.</p>
+          <BrandLogo light tagline />
+          <h2>Everything at home, in one place.</h2>
+          <p>Tasks, shopping, notices and messages for everyone you live with.</p>
+          <ul><li><CheckCircle2 size={18} />Clear task priorities</li><li><CheckCircle2 size={18} />Shared updates in real time</li><li><ShieldCheck size={18} />Private to your household</li></ul>
         </div>
       </div>
       <section className="auth-panel">
         <div className="auth-panel__top">
-          <BrandLogo compact />
+          <BrandLogo compact tagline />
           <ThemeToggle />
         </div>
         <div className="auth-copy">
-          <span className="eyebrow"><Sparkles size={14} /> {isRegister ? 'Your tower awaits' : 'Welcome home'}</span>
+          <span className="eyebrow"><ShieldCheck size={14} /> {isRegister ? 'Create your account' : 'Welcome back'}</span>
           <h1>{isRegister ? 'Create your account' : 'Welcome back!'}</h1>
-          <p>{isRegister ? "Let's get your first home ready." : "Let's keep the tower climbing."}</p>
+          <p>{isRegister ? 'Set up your profile, then create or join a household.' : 'Sign in to see what needs attention at home.'}</p>
         </div>
 
         <form className="form-stack" onSubmit={submit}>

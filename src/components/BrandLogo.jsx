@@ -1,9 +1,10 @@
-export default function BrandLogo({ compact = false, light = false }) {
+import dwellioLogo from '../assets/branding/dwellio/logo.svg'
+
+export default function BrandLogo({ compact = false, light = false, tagline = false }) {
   return (
     <div className={`brand-logo ${compact ? 'brand-logo--compact' : ''} ${light ? 'brand-logo--light' : ''}`}>
-      <span className="brand-crown" aria-hidden="true">♛</span>
-      <span className="brand-word brand-word--task">TASK</span>
-      <span className="brand-word brand-word--tower">TOWER</span>
+      <img className="brand-logo__image" src={dwellioLogo} alt="Dwellio" />
+      {tagline && <span className="brand-logo__tagline">Your home, organised.</span>}
     </div>
   )
 }

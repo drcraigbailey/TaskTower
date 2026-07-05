@@ -1,10 +1,3 @@
-import bathroomIcon from '../assets/game-art/ui/chore-categories/chore-bathroom.webp'
-import houseworkIcon from '../assets/game-art/ui/chore-categories/chore-housework.webp'
-import kitchenIcon from '../assets/game-art/ui/chore-categories/chore-kitchen.webp'
-import laundryIcon from '../assets/game-art/ui/chore-categories/chore-laundry.webp'
-import livingRoomIcon from '../assets/game-art/ui/chore-categories/chore-living-room.webp'
-import outdoorIcon from '../assets/game-art/ui/chore-categories/chore-outdoor.webp'
-
 export const demoHouse = {
   id: 'demo-house',
   name: 'Sunshine Home',
@@ -154,12 +147,12 @@ export const demoNotifications = [
 ]
 
 export const categoryMeta = {
-  Kitchen: { icon: kitchenIcon, tone: 'peach' },
-  Bathroom: { icon: bathroomIcon, tone: 'blue' },
-  'Living room': { icon: livingRoomIcon, tone: 'rose' },
-  Laundry: { icon: laundryIcon, tone: 'blue' },
-  Outdoor: { icon: outdoorIcon, tone: 'mint' },
-  Housework: { icon: houseworkIcon, tone: 'purple' },
+  Kitchen: { tone: 'peach' },
+  Bathroom: { tone: 'blue' },
+  'Living room': { tone: 'rose' },
+  Laundry: { tone: 'blue' },
+  Outdoor: { tone: 'mint' },
+  Housework: { tone: 'purple' },
 }
 
 export const defaultProfile = {

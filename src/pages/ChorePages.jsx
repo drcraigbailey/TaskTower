@@ -1,9 +1,8 @@
-import { ArrowDown, ArrowUp, Check, ChevronRight, CircleAlert, Plus, RotateCcw, Save, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Bath, Check, ChevronRight, CircleAlert, CookingPot, Home, Plus, RotateCcw, Save, Sofa, Sparkles, Trash2, WashingMachine } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { AppShell, ScreenHeader } from '../components/AppShell.jsx'
-import choresTeamwork from '../assets/game-art/screens/chores/chores-teamwork.webp'
 import { categoryMeta } from '../data/demoData.js'
 import { useTaskTower } from '../context/TaskTowerContext.jsx'
 
@@ -12,7 +11,7 @@ function ChoreCard({ chore, onOpen, onMove, first, last }) {
   const meta = categoryMeta[chore.category] || categoryMeta.Housework
   return (
     <article className={`chore-card chore-card--${chore.status}`}>
-      <button className={`category-icon category-icon--${meta.tone}`} onClick={onOpen} aria-label={`Open ${chore.name}`}><img src={meta.icon} alt="" /></button>
+      <button className={`category-icon category-icon--${meta.tone}`} onClick={onOpen} aria-label={`Open ${chore.name}`}><CategoryGlyph category={chore.category} /></button>
       <button className="chore-card__main" onClick={onOpen}>
         <span className="chore-card__title"><strong>{chore.name}</strong><small>{chore.category}</small></span>
         <div className="chore-progress"><span style={{ width: `${progress}%` }} /></div>
@@ -37,12 +36,11 @@ export function ChoreDashboardPage() {
     <AppShell>
       <section className="mobile-screen chores-screen with-bottom-space">
         <ScreenHeader
-          title="Chores"
+          title="Tasks"
           subtitle={activeHouse.name}
           back={`/house/${activeHouse.id}`}
           actions={<button className="add-button" onClick={() => navigate(`/house/${activeHouse.id}/chores/new`)}><Plus size={20} /></button>}
         />
-        <div className="chores-art-banner" aria-hidden="true"><img src={choresTeamwork} alt="" /></div>
         <div className="segmented-control">
           {['all', 'due', 'overdue', 'done'].map((item) => (
             <button className={filter === item ? 'active' : ''} onClick={() => setFilter(item)} key={item}>
@@ -110,7 +108,7 @@ export function ChoreEditorPage() {
   return (
     <AppShell>
       <section className="mobile-screen editor-screen">
-        <ScreenHeader title={editing ? 'Edit chore' : 'Add chore'} back={`/house/${houseId}/chores`} actions={<button className="text-button" form="chore-form"><Save size={17} /> Save</button>} />
+        <ScreenHeader title={editing ? 'Edit task' : 'Add task'} back={`/house/${houseId}/chores`} actions={<button className="text-button" form="chore-form"><Save size={17} /> Save</button>} />
         <form id="chore-form" className="form-stack editor-form" onSubmit={submit}>
           <label className="field"><span>Name</span><input name="name" value={form.name} onChange={update} placeholder="Kitchen surfaces" required /></label>
           <label className="field"><span>Description</span><textarea name="description" value={form.description} onChange={update} placeholder="What does a lovely finished job look like?" rows="3" /></label>
@@ -125,8 +123,8 @@ export function ChoreEditorPage() {
             <div>{[1, 2, 3, 4, 5].map((item) => <button type="button" className={form.difficulty === item ? 'active' : ''} onClick={() => setForm((current) => ({ ...current, difficulty: item }))} key={item}>{item}</button>)}</div>
             <small>{form.difficulty} point{form.difficulty === 1 ? '' : 's'} of effort</small>
           </fieldset>
-          <button className="primary-button"><Save size={18} /> {editing ? 'Save changes' : 'Add chore'}</button>
-          {editing && <button type="button" className="danger-button" onClick={remove}><Trash2 size={18} /> Delete chore</button>}
+          <button className="primary-button"><Save size={18} /> {editing ? 'Save changes' : 'Add task'}</button>
+          {editing && <button type="button" className="danger-button" onClick={remove}><Trash2 size={18} /> Delete task</button>}
         </form>
       </section>
     </AppShell>
@@ -153,8 +151,7 @@ export function ChoreDetailsPage() {
     <AppShell>
       <section className={`mobile-screen chore-detail-screen ${celebrating ? 'is-celebrating' : ''}`}>
         <ScreenHeader title={chore.name} back={`/house/${houseId}/chores`} actions={<button className="text-button" onClick={() => navigate(`/house/${houseId}/chores/${chore.id}/edit`)}>Edit</button>} />
-        {celebrating && <div className="completion-confetti" aria-hidden="true">✦ ● ✧ ★ ✦</div>}
-        <div className={`chore-hero chore-hero--${meta.tone}`}><img src={meta.icon} alt="" /><div><small>{chore.category}</small><strong>{chore.dueLabel}</strong></div></div>
+        <div className={`chore-hero chore-hero--${meta.tone}`}><span className="adult-detail-icon"><CategoryGlyph category={chore.category} /></span><div><small>{chore.category}</small><strong>{chore.dueLabel}</strong></div></div>
         <div className="clean-gauge" style={{ '--progress': `${progress * 3.6}deg` }}>
           <div><strong>{chore.quickCount} / {chore.fullCleanThreshold}</strong><span>quick cleans used</span></div>
         </div>
@@ -173,4 +170,9 @@ export function ChoreDetailsPage() {
       </section>
     </AppShell>
   )
+}
+
+function CategoryGlyph({ category }) {
+  const Icon = category === 'Kitchen' ? CookingPot : category === 'Bathroom' ? Bath : category === 'Laundry' ? WashingMachine : category === 'Living room' ? Sofa : category === 'Outdoor' ? Home : Sparkles
+  return <Icon size={22} aria-hidden="true" />
 }

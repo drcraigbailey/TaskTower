@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Home, KeyRound, Palette, Plus, Settings2, Sparkles, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import towerRaceArt from '../assets/game-art/screens/main-menu/main-menu-day.webp'
 import { AppShell, PageIntro, ScreenHeader, ThemeToggle, UserGreeting } from '../components/AppShell.jsx'
 import BrandLogo from '../components/BrandLogo.jsx'
 import { useTaskTower } from '../context/TaskTowerContext.jsx'
@@ -33,7 +32,6 @@ export function MainMenuPage() {
             <Settings2 size={20} />
           </button>
         </div>
-        <div className="menu-art" style={{ backgroundImage: `url(${towerRaceArt})` }} aria-hidden="true" />
       </section>
     </AppShell>
   )

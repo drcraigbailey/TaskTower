@@ -1,7 +1,7 @@
 import { ArrowLeft, Bell, ChevronLeft, Moon, Sun } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useTaskTower } from '../context/TaskTowerContext.jsx'
-import Avatar from './Avatar.jsx'
+import { MemberAvatar } from './adult/AdultUi.jsx'
 
 export function AppShell({ children, className = '' }) {
   const { toast } = useTaskTower()
@@ -38,7 +38,7 @@ export function UserGreeting({ onNotifications }) {
   const unread = notifications.filter((item) => item.unread).length
   return (
     <div className="user-greeting">
-      <Avatar avatar={profile.avatar} size="xs" />
+      <MemberAvatar name={profile.username} online />
       <div>
         <strong>Hi {profile.username}! <span aria-hidden="true">👋</span></strong>
         <p>What would you like to do?</p>
