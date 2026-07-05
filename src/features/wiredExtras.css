@@ -1,0 +1,94 @@
+.route-loading {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.route-loading__mark {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  color: white;
+  background: linear-gradient(135deg, var(--purple), #9b54ed);
+  box-shadow: 0 16px 30px rgba(124, 92, 255, .28);
+  font-size: 25px;
+  font-weight: 950;
+  animation: route-loading-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes route-loading-pulse {
+  to { transform: translateY(-4px) scale(1.03); }
+}
+
+.household-details-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.invite-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.invite-code-row span,
+.invite-code-row small,
+.invite-code-row strong { display: block; }
+.invite-code-row small { color: var(--muted); font-size: 10px; }
+.invite-code-row strong { margin-top: 3px; letter-spacing: .1em; font-size: 15px; }
+.invite-code-row button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--purple-deep);
+  background: var(--surface-raised);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.settings-helper-copy {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.adult-settings > .danger-button + .danger-button { margin-top: 10px; }
+
+.complete-button:disabled,
+.text-button:disabled,
+.primary-button:disabled,
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+  transform: none;
+  box-shadow: none;
+}
+
+.inline-message--success {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--green-deep, #28775f);
+  background: var(--green-soft);
+  border: 1px solid rgba(40, 119, 95, .16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-loading__mark { animation: none; }
+}
