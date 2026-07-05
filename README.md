@@ -1,34 +1,34 @@
-# TaskTower
+# Dwellio
 
-TaskTower is an Android-first React app that turns shared chores into a friendly monthly tower race. It follows the supplied cosy pastel concept boards and includes a complete local demo so the interface can be explored before Supabase is connected.
+Dwellio is an Android-first React household organiser for shared homes. It brings tasks, shopping, notices, messages, household activity and permissions into one calm workspace. The app includes a persistent local demo mode and switches to live Supabase data when environment variables are present.
 
-## Included screens
+## Included screens and flows
 
-- Login and registration
-- Main menu with Add House, Join House, and Settings only
-- Add/join house flows with persistent active-house routing
-- House hub with members, streak, and split-tower snapshot
-- Shared chore dashboard with status filters and reordering
-- Add, edit, delete, quick-clean, and full-clean flows
-- Zoomed split-tower race, leaderboard, and winner screen
-- Personal avatar and celebration settings
-- Shared household and game settings
-- In-app notification centre and native push-token registration
-- Light and dark themes, haptics, loading, empty, success, and error states
+- Login, registration and email-confirmation handling
+- Create or join a household with persistent active-house routing
+- Household dashboard with red, amber and green task summaries
+- Add, edit, assign, reorder, complete and delete tasks
+- Quick-clean and full-clean tracking with configurable thresholds
+- Shared shopping stock states and purchase workflow
+- Household messages and persistent notices with acknowledgements
+- Household activity timeline and member contribution summaries
+- Owner and admin settings with server-enforced member permissions
+- Profile editing, light and dark themes, haptics and native push-token registration
 
 ## Project structure
 
 ```text
 src/
-  assets/       generated splash artwork
-  components/   logo, character, tower, headers, navigation
-  context/      app state, persistence, demo/live service boundary
-  data/         safe local demo data
+  assets/       Dwellio branding and supplied artwork
+  components/   shared shell, navigation and interface components
+  context/      authentication, household state and demo/live data boundary
+  data/         safe local demonstration data
+  features/     dashboard, shopping, communication, activity and settings
   lib/          Supabase client and native push registration
-  pages/        auth, menu, house, chores, tower, settings
+  pages/        authentication, household creation and task flows
 supabase/
-  migrations/   full schema, RPCs, indexes, triggers and RLS
-resources/      source app icon and splash artwork
+  migrations/   schema, RPCs, triggers, indexes, Realtime and RLS policies
+resources/      source Android app icon and splash artwork
 android/        generated Capacitor Android project and assets
 ```
 
@@ -39,12 +39,12 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-Without environment variables the app runs in demo mode. Use any email and an eight-character password.
+Without environment variables the app runs in demo mode. Use any email address and an eight-character password. Demo household changes are persisted in local storage.
 
 ## Connect Supabase
 
 1. Create a Supabase project.
-2. Run `supabase/migrations/001_tasktower.sql` in the SQL editor (or use `supabase db push`).
+2. Apply every SQL file in `supabase/migrations` in numeric order, or run `supabase db push`.
 3. Copy `.env.example` to `.env` and add the project URL and public anon key.
 4. In Supabase Auth, add your development and production redirect URLs.
 5. Restart the Vite development server.
@@ -56,28 +56,22 @@ VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_KEY
 ```
 
-Never place a Supabase service-role key or Firebase server credential in the app. RLS is enabled on every application table, and all household data policies check membership.
+Never place a Supabase service-role key or Firebase server credential in the app. The client uses the public anon key, while Row Level Security and security-definer RPC checks enforce household membership and permissions.
 
-## Database migration
+## Database migrations
 
-The migration creates:
+Apply these in order:
 
-- `player_profiles`
-- `households`
-- `household_members`
-- `household_join_codes`
-- `chores`
-- `chore_completions`
-- `chore_settings`
-- `monthly_game_state`
-- `notifications`
-- `push_tokens`
+1. `001_tasktower.sql` creates authentication profiles, households, membership, tasks, completions, notifications, push tokens and the core household RPCs.
+2. `002_adult_household_hub.sql` adds rooms, categories, shopping, notices, messages, activity, household settings and the adult task fields.
+3. `003_wire_household_features.sql` backfills settings, caps households at ten members, adds activity and notification triggers, and completes Realtime publication coverage.
+4. `004_enforce_household_permissions.sql` enforces household feature and member permission switches in RLS and inside the task-completion RPC.
 
-It also adds `create_house`, `join_house`, `leave_house`, and atomic `complete_chore` RPCs; profile and notification triggers; indexes; RLS policies; and Realtime publication for shared household state.
+The live app expects all four migrations. Running only the first migration leaves the redesigned shopping, communication, activity and settings screens without their required tables.
 
 ## Android
 
-The Capacitor application ID is `app.tasktower.home`.
+The existing Capacitor application ID remains `app.tasktower.home` so installed Android builds and Firebase configuration do not silently become a different application during the Dwellio rebrand.
 
 ```powershell
 npm.cmd run android:sync
@@ -90,7 +84,7 @@ To build a debug APK without opening Android Studio:
 npm.cmd run android:build
 ```
 
-The source app icon and splash art are in `resources/`; generated Android density assets are already in `android/app/src/main/res`.
+The source app icon and splash art are in `resources/`; generated Android density assets are in `android/app/src/main/res`.
 
 ## Native push notifications
 
@@ -98,18 +92,12 @@ Token permission and registration are implemented in `src/lib/pushNotifications.
 
 1. Create a Firebase project whose Android package is `app.tasktower.home`.
 2. Download `google-services.json` into `android/app/`.
-3. Set `VITE_PUSH_NOTIFICATIONS_ENABLED=true` in `.env`. Leave it false until the Firebase file exists, otherwise Firebase Messaging may terminate the Android activity during login.
-4. Build/sync again. The Capacitor Android project applies the Google Services plugin automatically when that file exists.
-5. Create a Supabase Edge Function that reads recipient rows from `push_tokens`, sends through Firebase Cloud Messaging, and records the matching row in `notifications`.
+3. Set `VITE_PUSH_NOTIFICATIONS_ENABLED=true` in `.env`. Leave it false until the Firebase file exists.
+4. Build and sync again.
+5. Add a Supabase Edge Function that reads recipient rows from `push_tokens` and sends through Firebase Cloud Messaging.
 6. Store Firebase credentials and the Supabase service-role key as Edge Function secrets only.
 
-The SQL migration stores notification history and device tokens. The client intentionally does not include server-side sending credentials.
-
-## Artwork and icons
-
-- Original TaskTower splash illustration and app icon were generated for this project from the supplied concept boards.
-- Characters, tower game view, category treatments, progress graphics, confetti, and empty states are lightweight CSS/HTML components.
-- Interface icons use the free MIT-licensed Lucide icon set.
+The database creates notification records for task completions, shopping alerts, notices, household messages and new members. The client intentionally contains no server-side delivery credentials.
 
 ## Validation commands
 
@@ -123,4 +111,4 @@ cd android
 
 ## Production handoff
 
-Before Play Store release, add real Supabase project values, Firebase delivery credentials, signing configuration, privacy-policy links, final store screenshots, and run a physical-device notification test. Monthly due-soon/overdue scheduling should be driven by a Supabase scheduled Edge Function using the existing notification and chore data.
+Before Play Store release, add production Supabase values, Firebase delivery credentials, Android signing configuration, privacy-policy links and final store screenshots. Test registration confirmation, household invitations, each member role, permission changes, Realtime updates and push delivery on at least two physical devices.
