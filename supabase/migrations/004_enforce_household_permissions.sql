@@ -35,8 +35,14 @@ language plpgsql
 set search_path = public
 as $$
 begin
-  if tg_op = 'INSERT'
-     or new.frequency_type is distinct from old.frequency_type
+  if tg_op = 'INSERT' then
+    new.next_due_at := public.calculate_chore_next_due(
+      new.frequency_type,
+      new.frequency_interval,
+      new.frequency_unit,
+      coalesce(new.last_completed_at, new.created_at, now())
+    );
+  elsif new.frequency_type is distinct from old.frequency_type
      or new.frequency_interval is distinct from old.frequency_interval
      or new.frequency_unit is distinct from old.frequency_unit
      or new.last_completed_at is distinct from old.last_completed_at then
