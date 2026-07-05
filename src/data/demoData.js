@@ -123,8 +123,8 @@ export const demoNotifications = [
   {
     id: 1,
     type: 'success',
-    title: 'Alex climbed a floor!',
-    body: 'Kitchen surfaces is sparkling. The race is getting close.',
+    title: 'Alex earned a new badge!',
+    body: 'Kitchen surfaces is sparkling. Another household award is on the board.',
     time: '12 min',
     unread: true,
   },

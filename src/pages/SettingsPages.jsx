@@ -51,7 +51,7 @@ export function PersonalSettingsPage() {
           <div className="settings-row"><span><strong>Accessory</strong><small>A tiny bit of flair</small></span><select value={draft.avatar.accessory} onChange={(event) => updateAvatar('accessory', event.target.value)}><option value="none">None</option><option value="glasses">Glasses</option><option value="cap">Cap</option><option value="crown">Crown</option></select></div>
         </div>
         <section className="celebration-picker">
-          <div className="section-heading"><div><span className="eyebrow">At the next floor</span><h2>Celebration</h2></div><Sparkles size={20} /></div>
+          <div className="section-heading"><div><span className="eyebrow">At the next award</span><h2>Celebration</h2></div><Sparkles size={20} /></div>
           <div>{celebrations.map(([value, label, emoji]) => <button className={draft.avatar.celebration === value ? 'active' : ''} onClick={() => updateAvatar('celebration', value)} key={value}><span>{emoji}</span><small>{label}</small></button>)}</div>
         </section>
         <button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button>
@@ -85,7 +85,7 @@ export function SharedSettingsPage() {
         </div>
         <div className="settings-link-list">
           <SettingsLink icon={ClipboardList} tone="peach" title="Chore settings" text="Categories, limits and frequencies" onClick={() => navigate(`/house/${id}/chores`)} />
-          <SettingsLink icon={Gamepad2} tone="purple" title="Game settings" text="Tower height, points and bonuses" onClick={() => navigate(`/house/${id}/settings/game`)} />
+          <SettingsLink icon={Gamepad2} tone="purple" title="Awards and badges" text="Targets, points and bonuses" onClick={() => navigate(`/house/${id}/settings/game`)} />
           <SettingsLink icon={Users} tone="rose" title="Members" text={`${activeHouse.members.length} people in this house`} />
           <SettingsLink icon={Home} tone="mint" title="House info" text="Name, reset day and invite code" />
           <SettingsLink icon={Bell} tone="blue" title="Notifications" text="Shared in-app alert preferences" onClick={() => navigate('/notifications')} />
@@ -124,22 +124,22 @@ export function GameSettingsPage() {
   return (
     <AppShell>
       <section className="mobile-screen game-settings-screen">
-        <ScreenHeader title="Game settings" subtitle="Friendly rules for everyone" back={`/house/${activeHouse.id}/settings`} actions={<button className="text-button" onClick={() => showToast('Shared game settings saved.')}><Save size={17} /> Save</button>} />
+        <ScreenHeader title="Awards settings" subtitle="Friendly recognition for everyone" back={`/house/${activeHouse.id}/settings`} actions={<button className="text-button" onClick={() => showToast('Shared awards settings saved.')}><Save size={17} /> Save</button>} />
         <section className="setting-section">
-          <div className="section-heading"><div><span className="eyebrow">Monthly tower</span><h2>Race setup</h2></div><Gamepad2 size={20} /></div>
-          <div className="settings-row"><span><strong>Tower height</strong><small>Floors to reach the roof</small></span><select value={settings.height} onChange={(event) => update('height', Number(event.target.value))}><option value="10">10 floors</option><option value="20">20 floors</option><option value="30">30 floors</option><option value="40">Custom: 40</option></select></div>
-          <div className="settings-row"><span><strong>Monthly reset day</strong><small>Start a fresh race each month</small></span><input type="number" min="1" max="28" value={settings.resetDay} onChange={(event) => update('resetDay', Number(event.target.value))} /></div>
-          <div className="settings-row"><span><strong>Winner celebration</strong><small>The big rooftop moment</small></span><select value={settings.winnerCelebration} onChange={(event) => update('winnerCelebration', event.target.value)}>{celebrations.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></div>
+          <div className="section-heading"><div><span className="eyebrow">Monthly awards</span><h2>Badge setup</h2></div><Gamepad2 size={20} /></div>
+          <div className="settings-row"><span><strong>Badge target</strong><small>Badges to earn this month</small></span><select value={settings.height} onChange={(event) => update('height', Number(event.target.value))}><option value="10">10 badges</option><option value="20">20 badges</option><option value="30">30 badges</option><option value="40">Custom: 40</option></select></div>
+          <div className="settings-row"><span><strong>Monthly reset day</strong><small>Start a fresh awards period each month</small></span><input type="number" min="1" max="28" value={settings.resetDay} onChange={(event) => update('resetDay', Number(event.target.value))} /></div>
+          <div className="settings-row"><span><strong>Winner celebration</strong><small>The big awards moment</small></span><select value={settings.winnerCelebration} onChange={(event) => update('winnerCelebration', event.target.value)}>{celebrations.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></div>
         </section>
         <section className="setting-section">
-          <div className="section-heading"><div><span className="eyebrow">Scoring</span><h2>Climb rules</h2></div><SlidersHorizontal size={20} /></div>
-          <ToggleSetting title="Difficulty scaling" text="Harder chores climb more floors" value={settings.difficultyScaling} onChange={(value) => update('difficultyScaling', value)} />
+          <div className="section-heading"><div><span className="eyebrow">Scoring</span><h2>Award rules</h2></div><SlidersHorizontal size={20} /></div>
+          <ToggleSetting title="Difficulty scaling" text="Harder chores earn more award points" value={settings.difficultyScaling} onChange={(value) => update('difficultyScaling', value)} />
           <ToggleSetting title="Overdue bonus" text="A gentle bonus for rescuing overdue chores" value={settings.overdueBonus} onChange={(value) => update('overdueBonus', value)} />
           <div className="settings-row"><span><strong>Points per chore</strong><small>Base points before scaling</small></span><input type="number" min="1" max="10" value={settings.basePoints} onChange={(event) => update('basePoints', Number(event.target.value))} /></div>
           <div className="settings-row"><span><strong>Default full-clean limit</strong><small>Quick cleans before a reset</small></span><input type="number" min="1" max="20" value={settings.fullCleanDefault} onChange={(event) => update('fullCleanDefault', Number(event.target.value))} /></div>
         </section>
         <section className="category-summary"><div className="section-heading"><div><span className="eyebrow">Household</span><h2>Chore categories</h2></div><Palette size={20} /></div><div>{Object.entries(categoryMeta).map(([name, meta]) => <span key={name}><img src={meta.icon} alt="" /> {name}</span>)}</div></section>
-        <button className="primary-button" onClick={() => showToast('Shared game settings saved.')}><Save size={18} /> Save game settings</button>
+        <button className="primary-button" onClick={() => showToast('Shared awards settings saved.')}><Save size={18} /> Save awards settings</button>
       </section>
     </AppShell>
   )

@@ -1,5 +1,5 @@
 import { ArrowRight, Check, Package, Plus, Search, ShoppingBasket, Trash2, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { AdultSectionHeader, EmptyState, StatusBadge } from '../../components/adult/AdultUi.jsx'
 import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
@@ -17,12 +17,24 @@ export default function ShoppingPage() {
   const [showForm, setShowForm] = useState(false)
   const [tab, setTab] = useState('running_low')
   const [query, setQuery] = useState('')
+  const itemFormRef = useRef(null)
 
   const canEdit = canManageHousehold || householdSettings.permissions.members_add_shopping
   const visible = useMemo(() => shoppingItems.filter((item) => (
     item.state === tab
     && `${item.name} ${item.category || ''} ${item.note || ''}`.toLowerCase().includes(query.toLowerCase())
   )), [query, shoppingItems, tab])
+
+  useEffect(() => {
+    if (!showForm) return undefined
+    const frame = window.requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      itemFormRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [showForm])
+
+  const openItemForm = () => setShowForm(true)
 
   if (!activeHouse) return <Navigate to="/menu" replace />
 
@@ -45,10 +57,10 @@ export default function ShoppingPage() {
   return (
     <AppShell>
       <section className="mobile-screen adult-shopping with-bottom-space">
-        <ScreenHeader title="Shopping" subtitle={activeHouse.name} actions={canEdit ? <button className="add-button" onClick={() => setShowForm((current) => !current)} aria-label="Add shopping item">{showForm ? <X size={20} /> : <Plus size={20} />}</button> : null} />
+        <ScreenHeader title="Shopping" subtitle={activeHouse.name} actions={canEdit ? <button className="add-button" onClick={() => showForm ? setShowForm(false) : openItemForm()} aria-label={showForm ? 'Close add item form' : 'Add shopping item'}>{showForm ? <X size={20} /> : <Plus size={20} />}</button> : null} />
 
         {showForm && canEdit && (
-          <form className="adult-inline-form" onSubmit={submit}>
+          <form className="adult-inline-form shopping-item-form" onSubmit={submit} ref={itemFormRef}>
             <div className="adult-inline-form__header"><div><small>New item</small><h2>Add to the household list</h2></div><button type="button" className="icon-button icon-button--soft" onClick={() => setShowForm(false)} aria-label="Close add item form"><X size={18} /></button></div>
             <label className="field"><span>Item</span><input name="name" value={itemForm.name} onChange={updateForm} placeholder="Washing-up liquid" required maxLength="100" /></label>
             <div className="form-grid">
@@ -78,7 +90,7 @@ export default function ShoppingPage() {
             </article>
           ))}</div> : <EmptyState icon={ShoppingBasket} title="Nothing here" text="There are no matching items in this section." action={<button className="secondary-button" onClick={() => setQuery('')}>Clear search</button>} />}
         </section>
-        {canEdit ? <button className="primary-button shopping-add" onClick={() => setShowForm(true)}><Plus size={18} /> Add item</button> : <div className="adult-disabled-note">Your household permissions allow you to view shopping, but not change it.</div>}
+        {canEdit ? <button className="primary-button shopping-add" onClick={openItemForm}><Plus size={18} /> Add item</button> : <div className="adult-disabled-note">Your household permissions allow you to view shopping, but not change it.</div>}
         <BottomNav />
       </section>
     </AppShell>

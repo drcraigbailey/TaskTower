@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, Castle, ChevronRight, ClipboardCheck, Crown, Flame, Medal, Settings, Sparkles, Trophy, Users } from 'lucide-react'
+import { Bell, CalendarDays, ChevronRight, ClipboardCheck, Crown, Flame, Medal, Settings, Sparkles, Trophy, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Avatar from '../components/Avatar.jsx'
 import BottomNav from '../components/BottomNav.jsx'
@@ -45,7 +45,7 @@ export function HousePage() {
 
         <button className="tower-snapshot" onClick={() => navigate(`/house/${house.id}/tower`)}>
           <div className="tower-snapshot__title">
-            <div><span className="eyebrow">The friendly race</span><h2>Climb the tower</h2></div>
+            <div><span className="eyebrow">Household recognition</span><h2>Awards and badges</h2></div>
             <span className="round-arrow"><ChevronRight size={19} /></span>
           </div>
           <TowerScene members={house.members} height={house.towerHeight} compact />
@@ -53,7 +53,7 @@ export function HousePage() {
             {house.members.slice(0, 2).map((member, index) => (
               <div key={member.id}>
                 <Avatar avatar={member.avatar} size="xs" />
-                <span><strong>{member.username}</strong><small>{member.floors} of {house.towerHeight} floors</small></span>
+                <span><strong>{member.username}</strong><small>{member.floors} of {house.towerHeight} badges</small></span>
                 {index === 0 && <Crown className="leader-crown" size={18} />}
               </div>
             ))}
@@ -91,14 +91,14 @@ export function TowerPage() {
   return (
     <AppShell>
       <section className="mobile-screen tower-page with-bottom-space">
-        <ScreenHeader title="Tower" subtitle={`${house.towerHeight} floors`} back={`/house/${house.id}`} actions={<button className="icon-button icon-button--soft" onClick={() => navigate(`/house/${house.id}/leaderboard`)}><Medal size={20} /></button>} />
-        <div className="tower-race-label"><Sparkles size={17} /><span>You are <strong>{house.members[0].floors - house.members[1].floors} floors ahead</strong>. Keep it friendly!</span></div>
+        <ScreenHeader title="Awards" subtitle={`${house.towerHeight} badges available`} back={`/house/${house.id}`} actions={<button className="icon-button icon-button--soft" onClick={() => navigate(`/house/${house.id}/leaderboard`)}><Medal size={20} /></button>} />
+        <div className="tower-race-label"><Sparkles size={17} /><span>You have earned <strong>{house.members[0].floors} badges</strong> this month.</span></div>
         <TowerScene members={house.members} height={house.towerHeight} zoomed />
         <div className="tower-player-cards">
           {house.members.slice(0, 2).map((member, index) => (
             <div className={index === 0 ? 'tower-player-card tower-player-card--purple' : 'tower-player-card tower-player-card--rose'} key={member.id}>
               <Avatar avatar={member.avatar} size="xs" />
-              <span><small>{index === 0 ? 'You' : member.username}</small><strong>{member.floors} floors</strong></span>
+              <span><small>{index === 0 ? 'You' : member.username}</small><strong>{member.floors} badges</strong></span>
             </div>
           ))}
         </div>
@@ -117,14 +117,14 @@ export function LeaderboardPage() {
   return (
     <AppShell>
       <section className="mobile-screen leaderboard-screen">
-        <ScreenHeader title="Leaderboard" subtitle="This month" back={`/house/${house.id}/tower`} />
+        <ScreenHeader title="Awards board" subtitle="This month" back={`/house/${house.id}/tower`} />
         <div className="leader-card">
           <div className="confetti-field" aria-hidden="true">✦ · ✧ · ✦</div>
           <Crown size={38} fill="currentColor" />
           <Avatar avatar={members[0].avatar} size="lg" celebrating />
-          <span>Leading the climb</span>
+          <span>Most badges earned</span>
           <h2>{members[0].username}</h2>
-          <strong>{members[0].floors} floors</strong>
+          <strong>{members[0].floors} badges</strong>
         </div>
         <div className="rank-list">
           {members.map((member, index) => (
@@ -132,14 +132,14 @@ export function LeaderboardPage() {
               <span className={`rank-number rank-number--${index + 1}`}>{index + 1}</span>
               <Avatar avatar={member.avatar} size="xs" />
               <span className="rank-name"><strong>{member.username}</strong><small>{member.points} points</small></span>
-              <strong>{member.floors} floors</strong>
+              <strong>{member.floors} badges</strong>
             </div>
           ))}
         </div>
         <section className="previous-winners">
           <div className="section-heading"><h2>Previous winners</h2><Trophy size={20} /></div>
-          <div><span>June</span><strong>Alex · 20 floors</strong></div>
-          <div><span>May</span><strong>You · 20 floors</strong></div>
+          <div><span>June</span><strong>Alex · 20 badges</strong></div>
+          <div><span>May</span><strong>You · 20 badges</strong></div>
         </section>
       </section>
     </AppShell>
@@ -156,7 +156,7 @@ export function NotificationsPage() {
         <div className="notification-list">
           {notifications.map((item) => (
             <article className={`notification-card ${item.unread ? 'notification-card--unread' : ''}`} key={item.id}>
-              <span className={`notification-icon notification-icon--${item.type}`}>{item.type === 'success' ? <Castle size={20} /> : item.type === 'due' ? <ClipboardCheck size={20} /> : <Users size={20} />}</span>
+              <span className={`notification-icon notification-icon--${item.type}`}>{item.type === 'success' ? <Medal size={20} /> : item.type === 'due' ? <ClipboardCheck size={20} /> : <Users size={20} />}</span>
               <div><strong>{item.title}</strong><p>{item.body}</p><small>{item.time} ago</small></div>
               {item.unread && <span className="unread-pip" />}
             </article>
@@ -176,11 +176,11 @@ export function WinnerPage() {
   return (
     <AppShell className="winner-shell">
       <section className="mobile-screen winner-screen">
-        <img className="winner-art" src={winnerCelebration} alt="TaskTower champion holding a gold trophy on the tower roof" />
+        <img className="winner-art" src={winnerCelebration} alt="Household award winner holding a gold trophy" />
         <div className="winner-copy">
           <span className="eyebrow">Monthly champion</span>
-          <h1>You reached the roof!</h1>
-          <p>{winner.floors} floors, {winner.points} points, and a much happier home.</p>
+          <h1>You earned the monthly award!</h1>
+          <p>{winner.floors} badges, {winner.points} points, and a much happier home.</p>
           <div className="winner-trophy"><Trophy size={24} /><span>July winner</span></div>
           <button className="primary-button" onClick={() => navigate(`/house/${activeHouse.id}`)}>Celebrate at home</button>
         </div>

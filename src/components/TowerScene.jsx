@@ -5,7 +5,7 @@ export default function TowerScene({ members = [], height = 20, compact = false,
 
   return (
     <div className={`illustrated-tower ${compact ? 'illustrated-tower--compact' : ''} ${zoomed ? 'illustrated-tower--zoomed' : ''}`}>
-      <img src={towerRaceArt} alt="Purple and pink TaskTower with two housemates climbing" />
+      <img src={towerRaceArt} alt="Household awards and badges display" />
       <div className="illustrated-tower__shade" aria-hidden="true" />
       {visibleMembers.map((member, index) => {
         const progress = Math.max(8, Math.min(92, (member.floors / Math.max(height, 1)) * 100))
@@ -17,7 +17,7 @@ export default function TowerScene({ members = [], height = 20, compact = false,
           >
             <small>{index === 0 ? 'You' : member.username}</small>
             <strong>{member.floors}</strong>
-            <span>floors</span>
+            <span>badges</span>
           </div>
         )
       })}

@@ -8,7 +8,7 @@ import { useTaskTower } from '../context/TaskTowerContext.jsx'
 function AuthLayout({ mode }) {
   const isRegister = mode === 'register'
   const navigate = useNavigate()
-  const { activeHouse, login, register, loading, isSupabaseConfigured } = useTaskTower()
+  const { activeHouse, login, register, loading } = useTaskTower()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -92,13 +92,6 @@ function AuthLayout({ mode }) {
             {loading ? 'Opening the door…' : isRegister ? 'Create account' : 'Log in'}
           </button>
         </form>
-
-        {!isSupabaseConfigured && (
-          <div className="demo-note">
-            <span>Demo mode</span>
-            <p>Use any email and an 8-character password. Add Supabase keys later for live accounts.</p>
-          </div>
-        )}
 
         <p className="auth-switch">
           {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}

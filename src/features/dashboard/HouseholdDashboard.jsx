@@ -62,9 +62,9 @@ export default function HouseholdDashboard() {
         {urgentNotice && <section className={`adult-notice adult-notice--${urgentNotice.priority}`}><span><CircleAlert size={19} /></span><div><small>{urgentNotice.priority === 'urgent' ? 'Urgent notice' : 'Household notice'}</small><strong>{urgentNotice.title}</strong><p>{urgentNotice.body}</p>{urgentNotice.imageUrl && <img className="notice-media notice-media--compact" src={urgentNotice.imageUrl} alt="" />}</div><button onClick={() => navigate(`/house/${id}/messages?tab=notices`)}><ChevronRight size={19} /></button></section>}
 
         <section className="adult-panel">
-          <AdultSectionHeader eyebrow="This month" title="Household contribution" action={<Users size={19} />} />
+          <AdultSectionHeader eyebrow="This month" title="Awards and badges" action={<Users size={19} />} />
           <div className="adult-member-row">
-            {activeHouse.members.slice(0, 4).map((member, index) => <div key={member.id}><MemberAvatar name={member.username} image={member.image} online={index < 2} /><strong>{member.username}</strong><small>{Math.max(0, Math.round(member.points / 2))} tasks</small></div>)}
+            {activeHouse.members.slice(0, 4).map((member, index) => <div key={member.id}><MemberAvatar name={member.username} image={member.image} online={index < 2} /><strong>{member.username}</strong><small>{member.points || 0} award points · {member.floors || 0} badges</small></div>)}
           </div>
         </section>
 
