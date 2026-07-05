@@ -45,7 +45,7 @@ export default function HouseholdDashboard() {
           <div className="adult-task-stack">
             {[...urgentTasks, ...dueTasks].slice(0, 4).map((task) => (
               <button className="adult-task-row" key={task.id} onClick={() => navigate(`/house/${id}/chores/${task.id}`)}>
-                <span className={`adult-task-icon adult-task-icon--${uiStatus(task.status)}`}><ListTodo size={18} /></span>
+                <span className={`adult-task-icon adult-task-icon--${uiStatus(task.status)}`}>{task.imageUrl ? <img src={task.imageUrl} alt="" /> : <ListTodo size={18} />}</span>
                 <span><strong>{task.name}</strong><small>{task.category} · {task.dueLabel}</small></span>
                 <StatusBadge status={uiStatus(task.status)} />
               </button>
@@ -59,14 +59,12 @@ export default function HouseholdDashboard() {
           <button className="adult-summary-card" onClick={() => navigate(`/house/${id}/messages`)}><Megaphone size={20} /><span><small>Messages</small><strong>{messages.length} recent</strong><em>{notices.filter((notice) => notice.priority === 'urgent').length} urgent notice{notices.filter((notice) => notice.priority === 'urgent').length === 1 ? '' : 's'}</em></span></button>
         </section>
 
-        {urgentNotice && <section className={`adult-notice adult-notice--${urgentNotice.priority}`}>
-          <span><CircleAlert size={19} /></span><div><small>{urgentNotice.priority === 'urgent' ? 'Urgent notice' : 'Household notice'}</small><strong>{urgentNotice.title}</strong><p>{urgentNotice.body}</p></div><button onClick={() => navigate(`/house/${id}/messages?tab=notices`)}><ChevronRight size={19} /></button>
-        </section>}
+        {urgentNotice && <section className={`adult-notice adult-notice--${urgentNotice.priority}`}><span><CircleAlert size={19} /></span><div><small>{urgentNotice.priority === 'urgent' ? 'Urgent notice' : 'Household notice'}</small><strong>{urgentNotice.title}</strong><p>{urgentNotice.body}</p>{urgentNotice.imageUrl && <img className="notice-media notice-media--compact" src={urgentNotice.imageUrl} alt="" />}</div><button onClick={() => navigate(`/house/${id}/messages?tab=notices`)}><ChevronRight size={19} /></button></section>}
 
         <section className="adult-panel">
           <AdultSectionHeader eyebrow="This month" title="Household contribution" action={<Users size={19} />} />
           <div className="adult-member-row">
-            {activeHouse.members.slice(0, 4).map((member, index) => <div key={member.id}><MemberAvatar name={member.username} online={index < 2} /><strong>{member.username}</strong><small>{Math.max(0, Math.round(member.points / 2))} tasks</small></div>)}
+            {activeHouse.members.slice(0, 4).map((member, index) => <div key={member.id}><MemberAvatar name={member.username} image={member.image} online={index < 2} /><strong>{member.username}</strong><small>{Math.max(0, Math.round(member.points / 2))} tasks</small></div>)}
           </div>
         </section>
 
