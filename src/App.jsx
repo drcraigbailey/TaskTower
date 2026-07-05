@@ -14,7 +14,8 @@ import HouseholdHubPage from './features/households/HouseholdHubPage.jsx'
 import ActivityPage from './features/activity/ActivityPage.jsx'
 
 function StartPage() {
-  const { activeHouse, user } = useTaskTower()
+  const { activeHouse, user, authReady } = useTaskTower()
+  if (!authReady) return <div className="app-shell"><section className="mobile-screen route-loading"><span className="route-loading__mark">D</span><p>Opening Dwellio…</p></section></div>
   const justLoggedIn = sessionStorage.getItem('tasktower.justLoggedIn')
   if (justLoggedIn) {
     sessionStorage.removeItem('tasktower.justLoggedIn')
