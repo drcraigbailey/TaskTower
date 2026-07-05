@@ -117,7 +117,7 @@ create table public.household_activity (
 );
 
 alter table public.notifications drop constraint if exists notifications_type_check;
-alter table public.notifications add constraint notifications_type_check check (type in ('due_soon','overdue','full_clean','chore_completed','member_joined','member_left','notice','urgent_notice','household_message','direct_message','shopping_low','shopping_out','shopping_assigned','invitation','role_changed','settings_changed','system'));
+alter table public.notifications add constraint notifications_type_check check (type in ('due_soon','overdue','full_clean','chore_completed','member_joined','member_left','monthly_winner','notice','urgent_notice','household_message','direct_message','shopping_low','shopping_out','shopping_assigned','invitation','role_changed','settings_changed','system'));
 
 create or replace function public.is_household_admin(p_household_id uuid, p_user_id uuid default auth.uid())
 returns boolean language sql stable security definer set search_path = public as $$
