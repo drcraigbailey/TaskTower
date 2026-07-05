@@ -23,14 +23,17 @@ export default function AdultSettingsPage() {
   useEffect(() => setHouseName(activeHouse?.name || ''), [activeHouse?.name])
   if (!activeHouse) return <Navigate to="/menu" replace />
 
+  const canRenameHousehold = membershipRole === 'owner'
   const signOut = async () => { await logout(); navigate('/login') }
   const setPermission = (name, value) => setDraft((current) => ({ ...current, permissions: { ...current.permissions, [name]: value } }))
   const save = async () => {
     setSaving(true)
     const settingsSaved = await saveHouseholdSettings(draft)
-    const nameSaved = houseName.trim() === activeHouse.name ? true : await updateHousehold({ name: houseName })
+    const nameSaved = !canRenameHousehold || houseName.trim() === activeHouse.name
+      ? true
+      : await updateHousehold({ name: houseName })
     setSaving(false)
-    if (settingsSaved && nameSaved) showToast('Household settings saved.')
+    if (!settingsSaved || !nameSaved) return
   }
   const copyInvite = async () => {
     try {
@@ -53,9 +56,9 @@ export default function AdultSettingsPage() {
 
         <section className="adult-panel household-details-panel">
           <div className="settings-section-heading"><Home size={20} /><div><small>Household</small><h2>Details and invitations</h2></div></div>
-          <label className="field"><span>Household name</span><input value={houseName} onChange={(event) => setHouseName(event.target.value)} disabled={!canManageHousehold} minLength="2" maxLength="80" /></label>
+          <label className="field"><span>Household name</span><input value={houseName} onChange={(event) => setHouseName(event.target.value)} disabled={!canRenameHousehold} minLength="2" maxLength="80" /></label>
           <div className="invite-code-row"><span><small>Invite code</small><strong>{activeHouse.joinCode}</strong></span><button type="button" onClick={copyInvite}><Copy size={17} /> Copy</button></div>
-          <p className="settings-helper-copy">{activeHouse.members.length} of 10 household places are currently in use.</p>
+          <p className="settings-helper-copy">{activeHouse.members.length} of 10 household places are currently in use. Only the owner can rename the household.</p>
         </section>
 
         <section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode on this device</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section>
@@ -77,7 +80,7 @@ export default function AdultSettingsPage() {
           <SettingToggle icon={MessageCircle} label="Send messages" text="Members can write in the household conversation." checked={draft.permissions.members_message} disabled={!canManageHousehold || !draft.messaging_enabled} onChange={(value) => setPermission('members_message', value)} />
         </section>
 
-        {canManageHousehold ? <button className="primary-button settings-save-button" onClick={save} disabled={saving || houseName.trim().length < 2}><Save size={18} /> {saving ? 'Saving…' : 'Save household settings'}</button> : <div className="adult-owner-note"><ShieldCheck size={19} /><span><strong>Managed by household admins</strong><small>You can view these settings, but only an owner or admin can change them.</small></span></div>}
+        {canManageHousehold ? <button className="primary-button settings-save-button" onClick={save} disabled={saving || (canRenameHousehold && houseName.trim().length < 2)}><Save size={18} /> {saving ? 'Saving…' : 'Save household settings'}</button> : <div className="adult-owner-note"><ShieldCheck size={19} /><span><strong>Managed by household admins</strong><small>You can view these settings, but only an owner or admin can change them.</small></span></div>}
 
         <button className="adult-hub-settings" onClick={() => navigate('/settings')}><UserRound size={19} /> Personal account settings <ChevronRight size={18} /></button>
         {membershipRole !== 'owner' && <button className="danger-button" onClick={leave}><DoorOpen size={18} /> Leave household</button>}
