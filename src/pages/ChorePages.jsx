@@ -1,35 +1,41 @@
 import { ArrowDown, ArrowUp, Bath, Check, ChevronRight, CircleAlert, CookingPot, Home, Plus, RotateCcw, Save, Sofa, Sparkles, Trash2, WashingMachine } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { AppShell, ScreenHeader } from '../components/AppShell.jsx'
-import { categoryMeta } from '../data/demoData.js'
+import { useAdultHousehold } from '../context/AdultHouseholdContext.jsx'
 import { useTaskTower } from '../context/TaskTowerContext.jsx'
+import { categoryMeta } from '../data/demoData.js'
 
-function ChoreCard({ chore, onOpen, onMove, first, last }) {
+function ChoreCard({ chore, onOpen, onMove, first, last, canReorder }) {
   const progress = Math.min(100, (chore.quickCount / chore.fullCleanThreshold) * 100)
   const meta = categoryMeta[chore.category] || categoryMeta.Housework
   return (
     <article className={`chore-card chore-card--${chore.status}`}>
       <button className={`category-icon category-icon--${meta.tone}`} onClick={onOpen} aria-label={`Open ${chore.name}`}><CategoryGlyph category={chore.category} /></button>
       <button className="chore-card__main" onClick={onOpen}>
-        <span className="chore-card__title"><strong>{chore.name}</strong><small>{chore.category}</small></span>
+        <span className="chore-card__title"><strong>{chore.name}</strong><small>{[chore.room, chore.category].filter(Boolean).join(' · ')}</small></span>
         <div className="chore-progress"><span style={{ width: `${progress}%` }} /></div>
         <span className="chore-card__foot"><small>{chore.quickCount} / {chore.fullCleanThreshold} quick cleans</small><em>{chore.dueLabel}</em></span>
       </button>
-      <div className="reorder-buttons">
-        <button disabled={first} onClick={() => onMove(-1)} aria-label="Move chore up"><ArrowUp size={15} /></button>
-        <button disabled={last} onClick={() => onMove(1)} aria-label="Move chore down"><ArrowDown size={15} /></button>
-      </div>
+      {canReorder && <div className="reorder-buttons">
+        <button disabled={first} onClick={() => onMove(-1)} aria-label="Move task up"><ArrowUp size={15} /></button>
+        <button disabled={last} onClick={() => onMove(1)} aria-label="Move task down"><ArrowDown size={15} /></button>
+      </div>}
     </article>
   )
 }
 
 export function ChoreDashboardPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { activeHouse, chores, reorderChore } = useTaskTower()
-  const [filter, setFilter] = useState('all')
-  if (!activeHouse) return null
+  const { householdSettings, canManageHousehold } = useAdultHousehold()
+  const requestedFilter = searchParams.get('status')
+  const [filter, setFilter] = useState(['due', 'overdue', 'done'].includes(requestedFilter) ? requestedFilter : 'all')
+
+  if (!activeHouse) return <Navigate to="/menu" replace />
+  const canEdit = canManageHousehold || householdSettings.permissions.members_add_tasks
   const filtered = chores.filter((chore) => filter === 'all' || chore.status === filter)
 
   return (
@@ -39,7 +45,7 @@ export function ChoreDashboardPage() {
           title="Tasks"
           subtitle={activeHouse.name}
           back={`/house/${activeHouse.id}`}
-          actions={<button className="add-button" onClick={() => navigate(`/house/${activeHouse.id}/chores/new`)}><Plus size={20} /></button>}
+          actions={canEdit ? <button className="add-button" onClick={() => navigate(`/house/${activeHouse.id}/chores/new`)}><Plus size={20} /></button> : null}
         />
         <div className="segmented-control">
           {['all', 'due', 'overdue', 'done'].map((item) => (
@@ -55,6 +61,7 @@ export function ChoreDashboardPage() {
               chore={chore}
               first={index === 0}
               last={index === filtered.length - 1}
+              canReorder={canEdit && filter === 'all'}
               onOpen={() => navigate(`/house/${activeHouse.id}/chores/${chore.id}`)}
               onMove={(direction) => reorderChore(chore.id, direction)}
             />
@@ -73,11 +80,18 @@ const emptyChore = {
   name: '',
   description: '',
   category: 'Kitchen',
+  room: '',
+  urgency: 'normal',
+  assignedTo: '',
+  responsibility: 'shared',
   frequency: 'Daily',
   difficulty: 2,
   points: 2,
   quickCount: 0,
   fullCleanThreshold: 5,
+  estimatedMinutes: '',
+  photoRequired: false,
+  notes: '',
   status: 'due',
   dueLabel: 'Due soon',
 }
@@ -85,46 +99,63 @@ const emptyChore = {
 export function ChoreEditorPage() {
   const navigate = useNavigate()
   const { houseId, choreId } = useParams()
-  const { chores, saveChore, deleteChore } = useTaskTower()
+  const { activeHouse, chores, saveChore, deleteChore } = useTaskTower()
+  const { householdSettings, canManageHousehold } = useAdultHousehold()
   const existing = chores.find((chore) => chore.id === choreId)
   const [form, setForm] = useState(existing || emptyChore)
+  const [saving, setSaving] = useState(false)
   const editing = Boolean(existing)
+  const canEdit = canManageHousehold || householdSettings.permissions.members_add_tasks
+
+  if (!activeHouse) return <Navigate to="/menu" replace />
+  if (!canEdit) return <Navigate to={`/house/${houseId}/chores`} replace />
+
   const update = (event) => {
-    const { name, value, type } = event.target
-    setForm((current) => ({ ...current, [name]: type === 'number' ? Number(value) : value }))
+    const { name, value, type, checked } = event.target
+    setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value }))
   }
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault()
-    saveChore(form)
-    navigate(`/house/${houseId}/chores`)
+    setSaving(true)
+    const saved = await saveChore(form)
+    setSaving(false)
+    if (saved) navigate(`/house/${houseId}/chores`)
   }
 
-  const remove = () => {
-    deleteChore(existing.id)
-    navigate(`/house/${houseId}/chores`)
+  const remove = async () => {
+    setSaving(true)
+    const removed = await deleteChore(existing.id)
+    setSaving(false)
+    if (removed) navigate(`/house/${houseId}/chores`)
   }
 
   return (
     <AppShell>
       <section className="mobile-screen editor-screen">
-        <ScreenHeader title={editing ? 'Edit task' : 'Add task'} back={`/house/${houseId}/chores`} actions={<button className="text-button" form="chore-form"><Save size={17} /> Save</button>} />
+        <ScreenHeader title={editing ? 'Edit task' : 'Add task'} back={`/house/${houseId}/chores`} actions={<button className="text-button" form="chore-form" disabled={saving}><Save size={17} /> Save</button>} />
         <form id="chore-form" className="form-stack editor-form" onSubmit={submit}>
-          <label className="field"><span>Name</span><input name="name" value={form.name} onChange={update} placeholder="Kitchen surfaces" required /></label>
-          <label className="field"><span>Description</span><textarea name="description" value={form.description} onChange={update} placeholder="What does a lovely finished job look like?" rows="3" /></label>
+          <label className="field"><span>Name</span><input name="name" value={form.name} onChange={update} placeholder="Kitchen surfaces" required maxLength="100" /></label>
+          <label className="field"><span>Description</span><textarea name="description" value={form.description} onChange={update} placeholder="What does a finished job look like?" rows="3" /></label>
           <div className="form-grid">
             <label className="field"><span>Category</span><select name="category" value={form.category} onChange={update}>{Object.keys(categoryMeta).map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label className="field"><span>Room</span><input name="room" value={form.room} onChange={update} placeholder="Kitchen" maxLength="60" /></label>
+            <label className="field"><span>Urgency</span><select name="urgency" value={form.urgency} onChange={update}><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="critical">Critical</option></select></label>
+            <label className="field"><span>Assigned to</span><select name="assignedTo" value={form.assignedTo} onChange={update}><option value="">Everyone</option>{activeHouse.members.map((member) => <option value={member.id} key={member.id}>{member.username}</option>)}</select></label>
             <label className="field"><span>Frequency</span><select name="frequency" value={form.frequency} onChange={update}><option>Daily</option><option>Weekly</option><option>Fortnightly</option><option>Monthly</option><option>Custom interval</option></select></label>
             <label className="field"><span>Quick clean limit</span><input type="number" name="fullCleanThreshold" value={form.fullCleanThreshold} onChange={update} min="1" max="99" /></label>
-            <label className="field"><span>Points</span><input type="number" name="points" value={form.points} onChange={update} min="1" max="20" /></label>
+            <label className="field"><span>Estimated minutes</span><input type="number" name="estimatedMinutes" value={form.estimatedMinutes} onChange={update} min="1" max="1440" /></label>
+            <label className="field"><span>Points</span><input type="number" name="points" value={form.points} onChange={update} min="1" max="100" /></label>
           </div>
           <fieldset className="difficulty-picker">
             <legend>Difficulty</legend>
             <div>{[1, 2, 3, 4, 5].map((item) => <button type="button" className={form.difficulty === item ? 'active' : ''} onClick={() => setForm((current) => ({ ...current, difficulty: item }))} key={item}>{item}</button>)}</div>
             <small>{form.difficulty} point{form.difficulty === 1 ? '' : 's'} of effort</small>
           </fieldset>
-          <button className="primary-button"><Save size={18} /> {editing ? 'Save changes' : 'Add task'}</button>
-          {editing && <button type="button" className="danger-button" onClick={remove}><Trash2 size={18} /> Delete task</button>}
+          <label className="field"><span>Private notes</span><textarea name="notes" value={form.notes} onChange={update} placeholder="Products, access or useful reminders" rows="3" /></label>
+          <label className="adult-check-row"><input type="checkbox" name="photoRequired" checked={form.photoRequired} onChange={update} /><span><strong>Require a completion photo</strong><small>The database will remember this rule for future photo upload support.</small></span></label>
+          <button className="primary-button" disabled={saving}><Save size={18} /> {saving ? 'Saving…' : editing ? 'Save changes' : 'Add task'}</button>
+          {editing && <button type="button" className="danger-button" onClick={remove} disabled={saving}><Trash2 size={18} /> Delete task</button>}
         </form>
       </section>
     </AppShell>
@@ -135,14 +166,22 @@ export function ChoreDetailsPage() {
   const navigate = useNavigate()
   const { houseId, choreId } = useParams()
   const { chores, completeChore } = useTaskTower()
+  const { householdSettings, canManageHousehold } = useAdultHousehold()
   const chore = chores.find((item) => item.id === choreId)
   const [celebrating, setCelebrating] = useState(false)
+  const [completing, setCompleting] = useState(false)
+  const canComplete = canManageHousehold || householdSettings.permissions.members_complete_tasks
 
   const progress = useMemo(() => chore ? Math.min(100, (chore.quickCount / chore.fullCleanThreshold) * 100) : 0, [chore])
-  if (!chore) return null
+  if (!chore) return <Navigate to={`/house/${houseId}/chores`} replace />
   const meta = categoryMeta[chore.category] || categoryMeta.Housework
-  const complete = (type) => {
-    completeChore(chore.id, type)
+
+  const complete = async (type) => {
+    if (!canComplete || completing) return
+    setCompleting(true)
+    const completed = await completeChore(chore.id, type)
+    setCompleting(false)
+    if (!completed) return
     setCelebrating(true)
     window.setTimeout(() => setCelebrating(false), 1500)
   }
@@ -151,21 +190,26 @@ export function ChoreDetailsPage() {
     <AppShell>
       <section className={`mobile-screen chore-detail-screen ${celebrating ? 'is-celebrating' : ''}`}>
         <ScreenHeader title={chore.name} back={`/house/${houseId}/chores`} actions={<button className="text-button" onClick={() => navigate(`/house/${houseId}/chores/${chore.id}/edit`)}>Edit</button>} />
-        <div className={`chore-hero chore-hero--${meta.tone}`}><span className="adult-detail-icon"><CategoryGlyph category={chore.category} /></span><div><small>{chore.category}</small><strong>{chore.dueLabel}</strong></div></div>
+        <div className={`chore-hero chore-hero--${meta.tone}`}><span className="adult-detail-icon"><CategoryGlyph category={chore.category} /></span><div><small>{[chore.room, chore.category].filter(Boolean).join(' · ')}</small><strong>{chore.dueLabel}</strong></div></div>
         <div className="clean-gauge" style={{ '--progress': `${progress * 3.6}deg` }}>
           <div><strong>{chore.quickCount} / {chore.fullCleanThreshold}</strong><span>quick cleans used</span></div>
         </div>
         {chore.quickCount >= chore.fullCleanThreshold && <div className="full-clean-banner"><CircleAlert size={21} /><span><strong>Full clean needed</strong><small>A fresh start resets the quick-clean counter.</small></span></div>}
         <div className="completion-buttons">
-          <button className="complete-button complete-button--quick" onClick={() => complete('quick')}><Check size={21} />Quick clean completed</button>
-          <button className="complete-button complete-button--full" onClick={() => complete('full')}><Sparkles size={21} />Full clean completed</button>
+          <button className="complete-button complete-button--quick" onClick={() => complete('quick')} disabled={!canComplete || completing}><Check size={21} />Quick clean completed</button>
+          <button className="complete-button complete-button--full" onClick={() => complete('full')} disabled={!canComplete || completing}><Sparkles size={21} />Full clean completed</button>
         </div>
+        {!canComplete && <div className="adult-disabled-note">Your household permissions do not allow task completion.</div>}
         <dl className="detail-list">
-          <div><dt>Description</dt><dd>{chore.description || 'No extra notes.'}</dd></div>
+          <div><dt>Description</dt><dd>{chore.description || 'No extra description.'}</dd></div>
           <div><dt>Frequency</dt><dd>{chore.frequency}</dd></div>
+          <div><dt>Urgency</dt><dd>{chore.urgency}</dd></div>
+          <div><dt>Assigned to</dt><dd>{activeHouse?.members.find((member) => member.id === chore.assignedTo)?.username || 'Everyone'}</dd></div>
+          <div><dt>Estimated time</dt><dd>{chore.estimatedMinutes ? `${chore.estimatedMinutes} minutes` : 'Not set'}</dd></div>
           <div><dt>Difficulty</dt><dd>{chore.difficulty} / 5</dd></div>
           <div><dt>Points</dt><dd>{chore.points} points</dd></div>
-          <button onClick={() => complete('full')}><RotateCcw size={17} />Reset with full clean<ChevronRight size={17} /></button>
+          <div><dt>Notes</dt><dd>{chore.notes || 'No private notes.'}</dd></div>
+          {canComplete && <button onClick={() => complete('full')} disabled={completing}><RotateCcw size={17} />Reset with full clean<ChevronRight size={17} /></button>}
         </dl>
       </section>
     </AppShell>
