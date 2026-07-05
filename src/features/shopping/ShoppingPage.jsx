@@ -12,12 +12,13 @@ const emptyForm = { name: '', category: 'Other', state: 'shopping_list', quantit
 
 export default function ShoppingPage() {
   const { activeHouse } = useTaskTower()
-  const { shoppingItems, dataLoading, addShoppingItem, updateShoppingItem, markShoppingPurchased, deleteShoppingItem } = useAdultHousehold()
+  const { shoppingItems, householdSettings, canManageHousehold, dataLoading, addShoppingItem, updateShoppingItem, markShoppingPurchased, deleteShoppingItem } = useAdultHousehold()
   const [itemForm, setItemForm] = useState(emptyForm)
   const [showForm, setShowForm] = useState(false)
   const [tab, setTab] = useState('running_low')
   const [query, setQuery] = useState('')
 
+  const canEdit = canManageHousehold || householdSettings.permissions.members_add_shopping
   const visible = useMemo(() => shoppingItems.filter((item) => (
     item.state === tab
     && `${item.name} ${item.category || ''} ${item.note || ''}`.toLowerCase().includes(query.toLowerCase())
@@ -32,6 +33,7 @@ export default function ShoppingPage() {
 
   const submit = async (event) => {
     event.preventDefault()
+    if (!canEdit) return
     const nextTab = itemForm.state
     const saved = await addShoppingItem(itemForm)
     if (!saved) return
@@ -43,15 +45,15 @@ export default function ShoppingPage() {
   return (
     <AppShell>
       <section className="mobile-screen adult-shopping with-bottom-space">
-        <ScreenHeader title="Shopping" subtitle={activeHouse.name} actions={<button className="add-button" onClick={() => setShowForm((current) => !current)} aria-label="Add shopping item">{showForm ? <X size={20} /> : <Plus size={20} />}</button>} />
+        <ScreenHeader title="Shopping" subtitle={activeHouse.name} actions={canEdit ? <button className="add-button" onClick={() => setShowForm((current) => !current)} aria-label="Add shopping item">{showForm ? <X size={20} /> : <Plus size={20} />}</button> : null} />
 
-        {showForm && (
+        {showForm && canEdit && (
           <form className="adult-inline-form" onSubmit={submit}>
             <div className="adult-inline-form__header"><div><small>New item</small><h2>Add to the household list</h2></div><button type="button" className="icon-button icon-button--soft" onClick={() => setShowForm(false)} aria-label="Close add item form"><X size={18} /></button></div>
             <label className="field"><span>Item</span><input name="name" value={itemForm.name} onChange={updateForm} placeholder="Washing-up liquid" required maxLength="100" /></label>
             <div className="form-grid">
               <label className="field"><span>Category</span><input name="category" value={itemForm.category} onChange={updateForm} placeholder="Kitchen" maxLength="60" /></label>
-              <label className="field"><span>Status</span><select name="state" value={itemForm.state} onChange={updateForm}><option value="shopping_list">Shopping list</option><option value="running_low">Running low</option><option value="out">Out</option><option value="stocked">Stocked</option></select></label>
+              <label className="field"><span>Status</span><select name="state" value={itemForm.state} onChange={updateForm}><option value="shopping_list">Shopping list</option><option value="running_low">Running low</option><option value="out">Out</option></select></label>
               <label className="field"><span>Quantity</span><input type="number" min="0" step="0.01" name="quantity" value={itemForm.quantity} onChange={updateForm} placeholder="1" /></label>
               <label className="field"><span>Unit</span><input name="unit" value={itemForm.unit} onChange={updateForm} placeholder="bottle" maxLength="30" /></label>
             </div>
@@ -69,14 +71,14 @@ export default function ShoppingPage() {
               <span className="shopping-item-icon"><Package size={19} /></span>
               <div><strong>{item.name}</strong><small>{[item.detail, item.category].filter(Boolean).join(' · ')}</small></div>
               {tab === 'shopping_list' ? (
-                <div className="row-actions"><button className="purchase-button" onClick={() => markShoppingPurchased(item.id)} aria-label={`Mark ${item.name} purchased`}><Check size={18} /></button><button className="row-delete-button" onClick={() => deleteShoppingItem(item.id)} aria-label={`Remove ${item.name}`}><Trash2 size={17} /></button></div>
+                canEdit ? <div className="row-actions"><button className="purchase-button" onClick={() => markShoppingPurchased(item.id)} aria-label={`Mark ${item.name} purchased`}><Check size={18} /></button><button className="row-delete-button" onClick={() => deleteShoppingItem(item.id)} aria-label={`Remove ${item.name}`}><Trash2 size={17} /></button></div> : <StatusBadge status="current" label="Listed" />
               ) : (
-                <div className="row-actions"><StatusBadge status={tab === 'out' ? 'overdue' : 'attention'} label={tab === 'out' ? 'Out' : 'Low'} /><button className="row-move-button" onClick={() => updateShoppingItem(item.id, { state: 'shopping_list' })} aria-label={`Add ${item.name} to shopping list`}><ArrowRight size={17} /></button><button className="row-delete-button" onClick={() => deleteShoppingItem(item.id)} aria-label={`Remove ${item.name}`}><Trash2 size={17} /></button></div>
+                canEdit ? <div className="row-actions"><StatusBadge status={tab === 'out' ? 'overdue' : 'attention'} label={tab === 'out' ? 'Out' : 'Low'} /><button className="row-move-button" onClick={() => updateShoppingItem(item.id, { state: 'shopping_list' })} aria-label={`Add ${item.name} to shopping list`}><ArrowRight size={17} /></button><button className="row-delete-button" onClick={() => deleteShoppingItem(item.id)} aria-label={`Remove ${item.name}`}><Trash2 size={17} /></button></div> : <StatusBadge status={tab === 'out' ? 'overdue' : 'attention'} label={tab === 'out' ? 'Out' : 'Low'} />
               )}
             </article>
           ))}</div> : <EmptyState icon={ShoppingBasket} title="Nothing here" text="There are no matching items in this section." action={<button className="secondary-button" onClick={() => setQuery('')}>Clear search</button>} />}
         </section>
-        <button className="primary-button shopping-add" onClick={() => setShowForm(true)}><Plus size={18} /> Add item</button>
+        {canEdit ? <button className="primary-button shopping-add" onClick={() => setShowForm(true)}><Plus size={18} /> Add item</button> : <div className="adult-disabled-note">Your household permissions allow you to view shopping, but not change it.</div>}
         <BottomNav />
       </section>
     </AppShell>
