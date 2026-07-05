@@ -11,6 +11,7 @@ function AuthLayout({ mode }) {
   const { activeHouse, login, register, loading, isSupabaseConfigured } = useTaskTower()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '' })
 
   const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
@@ -18,13 +19,21 @@ function AuthLayout({ mode }) {
   const submit = async (event) => {
     event.preventDefault()
     setError('')
+    setNotice('')
     if (isRegister && form.password !== form.confirm) {
       setError('Those passwords do not match yet.')
       return
     }
     const result = isRegister ? await register(form) : await login(form)
-    if (result.ok) navigate(result.houseId ? `/house/${result.houseId}` : activeHouse ? `/house/${activeHouse.id}` : '/menu')
-    else setError(result.error)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    if (result.needsConfirmation) {
+      setNotice('Check your email to confirm your account, then come back and log in.')
+      return
+    }
+    navigate(result.houseId ? `/house/${result.houseId}` : activeHouse ? `/house/${activeHouse.id}` : '/menu')
   }
 
   return (
@@ -52,21 +61,21 @@ function AuthLayout({ mode }) {
           {isRegister && (
             <label className="field">
               <span>Username</span>
-              <input name="username" value={form.username} onChange={update} placeholder="What should we call you?" required />
+              <input name="username" value={form.username} onChange={update} placeholder="What should we call you?" required maxLength="40" />
             </label>
           )}
           <label className="field">
             <span>Email address</span>
             <div className="field-control">
               <Mail size={18} />
-              <input name="email" type="email" value={form.email} onChange={update} placeholder="you@example.com" required />
+              <input name="email" type="email" value={form.email} onChange={update} placeholder="you@example.com" required autoComplete="email" />
             </div>
           </label>
           <label className="field">
             <span>Password</span>
             <div className="field-control">
-              <input name="password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={update} placeholder="At least 8 characters" minLength="8" required />
-              <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label="Show password">
+              <input name="password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={update} placeholder="At least 8 characters" minLength="8" required autoComplete={isRegister ? 'new-password' : 'current-password'} />
+              <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
@@ -74,11 +83,12 @@ function AuthLayout({ mode }) {
           {isRegister && (
             <label className="field">
               <span>Confirm password</span>
-              <input name="confirm" type={showPassword ? 'text' : 'password'} value={form.confirm} onChange={update} placeholder="One more time" required />
+              <input name="confirm" type={showPassword ? 'text' : 'password'} value={form.confirm} onChange={update} placeholder="One more time" required autoComplete="new-password" />
             </label>
           )}
           {error && <div className="inline-message inline-message--error">{error}</div>}
-          <button className="primary-button" disabled={loading}>
+          {notice && <div className="inline-message inline-message--success"><CheckCircle2 size={17} />{notice}</div>}
+          <button className="primary-button" disabled={loading || Boolean(notice)}>
             {loading ? 'Opening the door…' : isRegister ? 'Create account' : 'Log in'}
           </button>
         </form>
