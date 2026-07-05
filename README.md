@@ -11,6 +11,8 @@ Dwellio is an Android-first React household organiser for shared homes. It bring
 - Quick-clean and full-clean tracking with configurable thresholds
 - Shared shopping stock states and purchase workflow
 - Household messages and persistent notices with acknowledgements
+- Profile pictures and optional images on tasks, messages and notices
+- Owner-controlled household member removal
 - Household activity timeline and member contribution summaries
 - Owner and admin settings with server-enforced member permissions
 - Profile editing, light and dark themes, haptics and native push-token registration
@@ -24,10 +26,10 @@ src/
   context/      authentication, household state and demo/live data boundary
   data/         safe local demonstration data
   features/     dashboard, shopping, communication, activity and settings
-  lib/          Supabase client and native push registration
+  lib/          Supabase client, private media helpers and native push registration
   pages/        authentication, household creation and task flows
 supabase/
-  migrations/   schema, RPCs, triggers, indexes, Realtime and RLS policies
+  migrations/   schema, RPCs, storage, triggers, indexes, Realtime and RLS policies
 resources/      source Android app icon and splash artwork
 android/        generated Capacitor Android project and assets
 ```
@@ -44,7 +46,7 @@ Without environment variables the app runs in demo mode. Use any email address a
 ## Connect Supabase
 
 1. Create a Supabase project.
-2. Apply every SQL file in `supabase/migrations` in numeric order, or run `supabase db push`.
+2. Apply every SQL file in `supabase/migrations` in timestamp order, or run `npx supabase db push`.
 3. Copy `.env.example` to `.env` and add the project URL and public anon key.
 4. In Supabase Auth, add your development and production redirect URLs.
 5. Restart the Vite development server.
@@ -62,12 +64,13 @@ Never place a Supabase service-role key or Firebase server credential in the app
 
 Apply these in order:
 
-1. `001_tasktower.sql` creates authentication profiles, households, membership, tasks, completions, notifications, push tokens and the core household RPCs.
-2. `002_adult_household_hub.sql` adds rooms, categories, shopping, notices, messages, activity, household settings and the adult task fields.
-3. `003_wire_household_features.sql` backfills settings, caps households at ten members, adds activity and notification triggers, and completes Realtime publication coverage.
-4. `004_enforce_household_permissions.sql` enforces household feature and member permission switches in RLS and inside the task-completion RPC.
+1. `20260705000100_tasktower.sql` creates authentication profiles, households, membership, tasks, completions, notifications, push tokens and the core household RPCs.
+2. `20260705000200_adult_household_hub.sql` adds rooms, categories, shopping, notices, messages, activity, household settings and the adult task fields.
+3. `20260705000300_wire_household_features.sql` backfills settings, caps households at ten members, adds activity and notification triggers, and completes Realtime publication coverage.
+4. `20260705000400_enforce_household_permissions.sql` enforces household feature and member permission switches in RLS and inside the task-completion RPC.
+5. `20260705000500_persistent_media_and_member_management.sql` adds private household image storage, profile and content image fields, image access policies and owner-controlled member removal.
 
-The live app expects all four migrations. Running only the first migration leaves the redesigned shopping, communication, activity and settings screens without their required tables.
+The live app expects all five migrations. Running only the first migrations leaves the redesigned household features without their required tables, functions, policies or private media bucket.
 
 ## Android
 
@@ -111,4 +114,4 @@ cd android
 
 ## Production handoff
 
-Before Play Store release, add production Supabase values, Firebase delivery credentials, Android signing configuration, privacy-policy links and final store screenshots. Test registration confirmation, household invitations, each member role, permission changes, Realtime updates and push delivery on at least two physical devices.
+Before Play Store release, add production Supabase values, Firebase delivery credentials, Android signing configuration, privacy-policy links and final store screenshots. Test registration confirmation, household invitations, each member role, permission changes, Realtime updates, private media access and push delivery on at least two physical devices.
