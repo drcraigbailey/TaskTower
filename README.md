@@ -1,53 +1,46 @@
 # TaskTower
 
-TaskTower is an Android-first React app that turns shared chores into a friendly monthly tower race. It follows the supplied cosy pastel concept boards and includes a complete local demo so the interface can be explored before Supabase is connected.
+TaskTower is an Android-first React app that turns shared household jobs into a friendly monthly tower race. It uses Supabase for real accounts, household membership, shared tasks, shopping, messages, notices, activity and live updates.
 
 ## Included screens
 
-- Login and registration
-- Main menu with Add House, Join House, and Settings only
-- Add/join house flows with persistent active-house routing
-- House hub with members, streak, and split-tower snapshot
-- Shared chore dashboard with status filters and reordering
-- Add, edit, delete, quick-clean, and full-clean flows
-- Zoomed split-tower race, leaderboard, and winner screen
-- Personal avatar and celebration settings
-- Shared household and game settings
-- In-app notification centre and native push-token registration
-- Light and dark themes, haptics, loading, empty, success, and error states
+- Login and registration using Supabase Auth
+- Household switcher with create and join flows
+- Persistent active-house routing across web and Android
+- House dashboard with members, shared task status and recent activity
+- Add, edit, delete, reorder, quick-clean and full-clean task flows
+- Persistent shopping list and household stock states
+- Persistent household messages and notices
+- Household and profile settings saved to Supabase
+- In-app notifications and native push-token registration
+- Light and dark themes, haptics, loading, empty, success and error states
 
 ## Project structure
 
 ```text
 src/
   assets/       generated splash artwork
-  components/   logo, character, tower, headers, navigation
-  context/      app state, persistence, demo/live service boundary
-  data/         safe local demo data
-  lib/          Supabase client and native push registration
-  pages/        auth, menu, house, chores, tower, settings
+  components/   logo, character, tower, headers and navigation
+  context/      authenticated app state and Supabase persistence
+  data/         static UI metadata and safe defaults
+  features/     household dashboard, shopping, communication and settings
+  lib/          Supabase client, data services and native push registration
+  pages/        auth, household creation and task screens
 supabase/
-  migrations/   full schema, RPCs, indexes, triggers and RLS
+  migrations/   schema, RPCs, indexes, triggers, RLS and shared feature tables
 resources/      source app icon and splash artwork
 android/        generated Capacitor Android project and assets
 ```
 
-## Run locally
-
-```powershell
-npm.cmd install
-npm.cmd run dev
-```
-
-Without environment variables the app runs in demo mode. Use any email and an eight-character password.
-
 ## Connect Supabase
 
+This app does not include demo accounts or a local data fallback. Supabase must be configured before login, registration or household changes can be used.
+
 1. Create a Supabase project.
-2. Run `supabase/migrations/001_tasktower.sql` in the SQL editor (or use `supabase db push`).
+2. Apply every migration in `supabase/migrations/` with `supabase db push`.
 3. Copy `.env.example` to `.env` and add the project URL and public anon key.
 4. In Supabase Auth, add your development and production redirect URLs.
-5. Restart the Vite development server.
+5. Restart the Vite development server after changing environment values.
 
 Required client values:
 
@@ -56,11 +49,18 @@ VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_KEY
 ```
 
-Never place a Supabase service-role key or Firebase server credential in the app. RLS is enabled on every application table, and all household data policies check membership.
+Never place a Supabase service-role key or Firebase server credential in the app. The public anon key is expected in the client; Row Level Security is the data boundary.
 
-## Database migration
+## Run locally
 
-The migration creates:
+```powershell
+npm.cmd install
+npm.cmd run dev
+```
+
+## Database
+
+The migrations create and secure:
 
 - `player_profiles`
 - `households`
@@ -72,8 +72,11 @@ The migration creates:
 - `monthly_game_state`
 - `notifications`
 - `push_tokens`
+- `household_shopping_items`
+- `household_messages`
+- `household_notices`
 
-It also adds `create_house`, `join_house`, `leave_house`, and atomic `complete_chore` RPCs; profile and notification triggers; indexes; RLS policies; and Realtime publication for shared household state.
+The database also provides `create_house`, `join_house`, `leave_house` and atomic `complete_chore` RPCs. Household data is protected by membership-aware RLS policies and the live tables are added to Supabase Realtime.
 
 ## Android
 
@@ -90,7 +93,7 @@ To build a debug APK without opening Android Studio:
 npm.cmd run android:build
 ```
 
-The source app icon and splash art are in `resources/`; generated Android density assets are already in `android/app/src/main/res`.
+The source app icon and splash art are in `resources/`; generated Android density assets are in `android/app/src/main/res`.
 
 ## Native push notifications
 
@@ -98,18 +101,10 @@ Token permission and registration are implemented in `src/lib/pushNotifications.
 
 1. Create a Firebase project whose Android package is `app.tasktower.home`.
 2. Download `google-services.json` into `android/app/`.
-3. Set `VITE_PUSH_NOTIFICATIONS_ENABLED=true` in `.env`. Leave it false until the Firebase file exists, otherwise Firebase Messaging may terminate the Android activity during login.
-4. Build/sync again. The Capacitor Android project applies the Google Services plugin automatically when that file exists.
-5. Create a Supabase Edge Function that reads recipient rows from `push_tokens`, sends through Firebase Cloud Messaging, and records the matching row in `notifications`.
+3. Set `VITE_PUSH_NOTIFICATIONS_ENABLED=true` in `.env` only after that file exists.
+4. Build and sync again.
+5. Create a Supabase Edge Function that reads recipient rows from `push_tokens`, sends through Firebase Cloud Messaging and records the matching row in `notifications`.
 6. Store Firebase credentials and the Supabase service-role key as Edge Function secrets only.
-
-The SQL migration stores notification history and device tokens. The client intentionally does not include server-side sending credentials.
-
-## Artwork and icons
-
-- Original TaskTower splash illustration and app icon were generated for this project from the supplied concept boards.
-- Characters, tower game view, category treatments, progress graphics, confetti, and empty states are lightweight CSS/HTML components.
-- Interface icons use the free MIT-licensed Lucide icon set.
 
 ## Validation commands
 
@@ -123,4 +118,4 @@ cd android
 
 ## Production handoff
 
-Before Play Store release, add real Supabase project values, Firebase delivery credentials, signing configuration, privacy-policy links, final store screenshots, and run a physical-device notification test. Monthly due-soon/overdue scheduling should be driven by a Supabase scheduled Edge Function using the existing notification and chore data.
+Before Play Store release, add production Supabase and Firebase values, signing configuration, privacy-policy links and final store assets. Run a physical-device test covering registration, email confirmation, creating and switching households, cross-device Realtime updates, offline recovery and push delivery.
