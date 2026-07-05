@@ -30,7 +30,8 @@ export default function CommunicationPage() {
 
   const send = async () => {
     if (!canMessage || !text.trim()) return
-    const sent = await sendMessage(text, recipientId || null)
+    const targetRecipientId = directMessagingAvailable ? recipientId || null : null
+    const sent = await sendMessage(text, targetRecipientId)
     if (sent) setText('')
   }
 
@@ -79,7 +80,7 @@ export default function CommunicationPage() {
             {!householdSettings.messaging_enabled ? <div className="adult-disabled-note">Household messaging is disabled in settings.</div> : <>
               <div className="message-thread">{dataLoading ? <p className="adult-loading-copy">Updating messages…</p> : messages.length ? messages.map((message) => <article className={`message-row ${message.mine ? 'message-row--mine' : ''}`} key={message.id}>{!message.mine && <MemberAvatar name={message.author} size="sm" online />}<div><small>{message.author} · {message.recipient_id ? 'Direct' : 'Household'} · {message.time}</small><p>{message.body}</p>{message.mine && <span><CheckCircle2 size={12} /> Sent <button className="message-remove-button" onClick={() => deleteMessage(message.id)} aria-label="Remove message"><Trash2 size={13} /></button></span>}</div></article>) : <div className="adult-empty-copy"><Send size={25} /><h2>Start the conversation</h2><p>Messages sent here are shared with the household unless you choose a person directly.</p></div>}</div>
               {canMessage ? <>
-                {directMessagingAvailable && otherMembers.length > 0 && <label className="message-target"><span>Send to</span><select value={recipientId} onChange={(event) => setRecipientId(event.target.value)}><option value="">Everyone in the household</option>{otherMembers.map((member) => <option value={member.id} key={member.id}>{member.username}</option>)}</select></label>}
+                {directMessagingAvailable && otherMembers.length > 0 && <label className="field message-target"><span>Send to</span><select value={recipientId} onChange={(event) => setRecipientId(event.target.value)}><option value="">Everyone in the household</option>{otherMembers.map((member) => <option value={member.id} key={member.id}>{member.username}</option>)}</select></label>}
                 <div className="message-composer"><input value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && send()} placeholder={selectedRecipient ? `Message ${selectedRecipient.username}` : 'Message the household'} aria-label={selectedRecipient ? `Message ${selectedRecipient.username}` : 'Message the household'} maxLength="4000" /><button onClick={send} disabled={!text.trim()} aria-label="Send message"><Send size={18} /></button></div>
               </> : <div className="adult-disabled-note">You can read messages, but your household role cannot send them.</div>}
             </>}
