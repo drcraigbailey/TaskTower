@@ -10,12 +10,13 @@ const tabs = [['low', 'Running low'], ['out', 'Out'], ['list', 'Shopping list']]
 const emptyForm = { name: '', detail: '', category: 'General', state: 'list' }
 
 export default function ShoppingPage() {
-  const { activeHouse, addShoppingItem, deleteShoppingItem, markShoppingPurchased, shoppingItems } = useTaskTower()
+  const { activeHouse, addShoppingItem, deleteShoppingItem, purchaseShoppingItem, shoppingItems } = useTaskTower()
   const [tab, setTab] = useState('low')
   const [query, setQuery] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [busy, setBusy] = useState(false)
+  const [purchasingId, setPurchasingId] = useState(null)
   const [removing, setRemoving] = useState(false)
   const [pendingRemoval, setPendingRemoval] = useState(null)
   const [error, setError] = useState('')
@@ -41,11 +42,15 @@ export default function ShoppingPage() {
   }
 
   const purchase = async (id) => {
+    if (purchasingId) return
+    setPurchasingId(id)
     setError('')
     try {
-      await markShoppingPurchased(id)
+      await purchaseShoppingItem(id)
     } catch (err) {
       setError(err.message || 'The item could not be updated.')
+    } finally {
+      setPurchasingId(null)
     }
   }
 
@@ -86,7 +91,7 @@ export default function ShoppingPage() {
               <span className="shopping-item-icon"><Package size={19} /></span>
               <div><strong>{item.name}</strong><small>{item.detail || 'No extra details'} · {item.category}</small></div>
               {tab === 'list'
-                ? <button className="purchase-button" onClick={() => purchase(item.id)} aria-label={`Mark ${item.name} purchased`}><Check size={18} /></button>
+                ? <button className="purchase-button" onClick={() => purchase(item.id)} disabled={purchasingId === item.id} aria-label={`Mark ${item.name} purchased`}>{purchasingId === item.id ? '…' : <Check size={18} />}</button>
                 : <><StatusBadge status={tab === 'out' ? 'overdue' : 'attention'} label={tab === 'out' ? 'Out' : 'Low'} /><button className="purchase-button" onClick={() => setPendingRemoval(item)} aria-label={`Remove ${item.name}`}><Trash2 size={16} /></button></>}
             </article>
           ))}</div> : <EmptyState icon={ShoppingBasket} title="Nothing here" text="There are no matching items in this section." action={<button className="secondary-button" onClick={() => setQuery('')}>Clear search</button>} />}
