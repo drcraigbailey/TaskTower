@@ -5,6 +5,7 @@ import { MemberAvatar } from '../../components/adult/AdultUi.jsx'
 import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import { useTaskTower } from '../../context/TaskTowerContext.jsx'
 import { deleteHouseholdRecord, removeHouseholdMemberRecord } from '../../lib/liveMutations.js'
+import HouseholdInviteRepair from './HouseholdInviteRepair.jsx'
 import './household-owner-controls.css'
 
 export default function HouseholdOwnerControls() {
@@ -66,6 +67,12 @@ export default function HouseholdOwnerControls() {
 
   return (
     <>
+      <section className="adult-panel household-management-panel">
+        <div className="activity-title"><Users size={20} /><h2>Invite people</h2></div>
+        <p className="household-management-copy">The code above is checked whenever this page opens. Create a new one if someone has been given an old or inactive code.</p>
+        <HouseholdInviteRepair />
+      </section>
+
       <section className="adult-panel household-management-panel">
         <div className="activity-title"><Users size={20} /><h2>Manage members</h2></div>
         <p className="household-management-copy">Removed members immediately lose access. Their previous task activity remains in the household history.</p>
