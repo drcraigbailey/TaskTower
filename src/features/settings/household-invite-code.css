@@ -1,0 +1,34 @@
+.household-invite-control {
+  display: grid;
+  gap: 9px;
+}
+
+.invite-code-refresh {
+  width: fit-content;
+  min-height: 38px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: var(--purple-deep);
+  background: var(--surface-raised);
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.invite-code-refresh:disabled,
+.household-invite-control .field-control button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.is-spinning {
+  animation: invite-code-spin .8s linear infinite;
+}
+
+@keyframes invite-code-spin {
+  to { transform: rotate(360deg); }
+}
