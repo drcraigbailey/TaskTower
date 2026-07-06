@@ -3,7 +3,9 @@ import { supabase } from './supabase.js'
 const MEDIA_BUCKET = 'household-media'
 const MAX_SOURCE_BYTES = 15 * 1024 * 1024
 const OUTPUT_DIMENSION = 1024
-const SAFE_PADDING_RATIO = 0.06
+// The upload is inset before being placed on its square canvas. Combined with
+// the small display inset, even a square photo stays within a circular mask.
+const SAFE_PADDING_RATIO = 0.08
 
 const requireStorage = () => {
   if (!supabase) throw new Error('This build is not connected to Supabase. Add the live environment values and rebuild the app.')
