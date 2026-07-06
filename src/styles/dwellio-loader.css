@@ -2,31 +2,49 @@
 .route-transition-loader {
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 0;
   color: var(--ink);
   text-align: center;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .route-loading {
   min-height: 100vh;
   min-height: 100svh;
-  background: var(--surface);
 }
 
-.dwellio-loading__content {
+.dwellio-loading__content,
+.route-transition-loader .dwellio-loading__content {
   display: grid;
   justify-items: center;
   gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .dwellio-loading__mark {
   display: block;
   width: var(--dwellio-loader-size, 148px);
   height: var(--dwellio-loader-size, 148px);
+  margin: 0;
   padding: 0;
+  border: 0;
   border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  outline: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none;
   object-fit: contain;
 }
 
@@ -43,16 +61,8 @@
   inset: 0;
   min-height: 100vh;
   min-height: 100svh;
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  pointer-events: none;
   animation: dwellio-route-loader-in .16s ease both;
-}
-
-.route-transition-loader .dwellio-loading__content {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
 }
 
 @keyframes dwellio-route-loader-in {
