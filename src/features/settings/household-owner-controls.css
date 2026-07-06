@@ -1,0 +1,96 @@
+.household-management-panel,
+.household-danger-zone {
+  display: grid;
+  gap: 12px;
+}
+
+.household-management-copy,
+.household-danger-zone > p,
+.household-management-empty {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.household-member-management-list {
+  display: grid;
+}
+
+.household-member-management-row {
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.household-member-management-row:last-child {
+  border-bottom: 0;
+}
+
+.household-member-management-row > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.household-member-management-row strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.household-member-management-row small {
+  color: var(--muted);
+  font-size: 8px;
+  text-transform: capitalize;
+}
+
+.member-remove-button {
+  min-height: 36px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(210, 77, 100, .2);
+  border-radius: 11px;
+  color: #c2475c;
+  background: var(--pink-soft);
+  font-size: 9px;
+  font-weight: 760;
+}
+
+.member-remove-button:disabled {
+  cursor: wait;
+  opacity: .55;
+}
+
+.household-danger-zone {
+  border-color: rgba(210, 77, 100, .22);
+  background: color-mix(in srgb, var(--pink-soft) 45%, var(--surface-raised));
+}
+
+.household-danger-zone .activity-title {
+  color: #b83f54;
+}
+
+.household-danger-zone .inline-message {
+  margin: 0;
+}
+
+@media (max-width: 380px) {
+  .household-member-management-row {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .member-remove-button {
+    width: 38px;
+    padding: 0;
+    font-size: 0;
+  }
+}
