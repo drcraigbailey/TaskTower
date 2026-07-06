@@ -11,27 +11,30 @@ const iconReference = path.join(sourceDir, 'dwellio-app-icon-reference.jpg')
 const splashReference = path.join(sourceDir, 'dwellio-splash-reference.jpg')
 const ivory = { r: 251, g: 249, b: 244, alpha: 1 }
 
+// Prefer the checked-in PNG outputs. The JPEGs are retained as portable source
+// references, but older clones may contain truncated copies from an earlier commit.
 const iconCandidates = [
-  iconReference,
   path.join(assetsDir, 'icon-only.png'),
+  iconReference,
 ]
 
 const splashCandidates = [
-  splashReference,
   path.join(assetsDir, 'splash-portrait.png'),
   path.join(androidRes, 'drawable', 'splash.png'),
+  splashReference,
 ]
 
 const ensureDir = (dir) => fs.mkdir(dir, { recursive: true })
 
-const readFirstValidImage = async (candidates, label) => {
+const decodeFirstValidImage = async (candidates, label) => {
   const failures = []
 
   for (const candidate of candidates) {
     try {
       const input = await fs.readFile(candidate)
-      await sharp(input).metadata()
-      return input
+      // metadata() can succeed on a truncated JPEG. Force a complete decode so
+      // a damaged candidate is rejected here instead of exploding later.
+      return await sharp(input).png().toBuffer()
     } catch (error) {
       failures.push(`${candidate}: ${error.message}`)
     }
@@ -49,8 +52,8 @@ await Promise.all([
 ])
 
 const [iconInput, splashInput] = await Promise.all([
-  readFirstValidImage(iconCandidates, 'Dwellio app icon'),
-  readFirstValidImage(splashCandidates, 'Dwellio splash screen'),
+  decodeFirstValidImage(iconCandidates, 'Dwellio app icon'),
+  decodeFirstValidImage(splashCandidates, 'Dwellio splash screen'),
 ])
 
 const iconBuffer = await sharp(iconInput)
