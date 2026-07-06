@@ -4,14 +4,39 @@ import sharp from 'sharp'
 
 const root = path.resolve('.')
 const sourceDir = path.join(root, 'source-assets', 'branding')
-const iconReference = path.join(sourceDir, 'dwellio-app-icon-reference.jpg')
-const splashReference = path.join(sourceDir, 'dwellio-splash-reference.jpg')
 const assetsDir = path.join(root, 'assets')
 const appBrandingDir = path.join(root, 'src', 'assets', 'branding')
 const androidRes = path.join(root, 'android', 'app', 'src', 'main', 'res')
 const ivory = { r: 251, g: 249, b: 244, alpha: 1 }
 
+const iconCandidates = [
+  path.join(sourceDir, 'dwellio-app-icon-reference.jpg'),
+  path.join(assetsDir, 'icon-only.png'),
+]
+
+const splashCandidates = [
+  path.join(sourceDir, 'dwellio-splash-reference.jpg'),
+  path.join(assetsDir, 'splash-portrait.png'),
+  path.join(androidRes, 'drawable', 'splash.png'),
+]
+
 const ensureDir = (dir) => fs.mkdir(dir, { recursive: true })
+
+const readFirstValidImage = async (candidates, label) => {
+  const failures = []
+
+  for (const candidate of candidates) {
+    try {
+      const input = await fs.readFile(candidate)
+      await sharp(input).metadata()
+      return input
+    } catch (error) {
+      failures.push(`${candidate}: ${error.message}`)
+    }
+  }
+
+  throw new Error(`No valid ${label} image was found.\n${failures.join('\n')}`)
+}
 
 await Promise.all([
   ensureDir(assetsDir),
@@ -20,7 +45,12 @@ await Promise.all([
   ensureDir(path.join(androidRes, 'mipmap-anydpi-v26')),
 ])
 
-const iconBuffer = await sharp(iconReference)
+const [iconInput, splashInput] = await Promise.all([
+  readFirstValidImage(iconCandidates, 'Dwellio app icon'),
+  readFirstValidImage(splashCandidates, 'Dwellio splash screen'),
+])
+
+const iconBuffer = await sharp(iconInput)
   .resize(1024, 1024, { fit: 'cover' })
   .png()
   .toBuffer()
@@ -45,7 +75,7 @@ const iconBackgroundBuffer = await sharp({
   .png()
   .toBuffer()
 
-const splashPortraitBuffer = await sharp(splashReference)
+const splashPortraitBuffer = await sharp(splashInput)
   .resize(1440, 3200, { fit: 'cover', position: 'centre' })
   .png()
   .toBuffer()
