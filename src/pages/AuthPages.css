@@ -1,0 +1,48 @@
+.auth-panel .auth-input-control {
+  min-height: 58px;
+  padding: 0 14px;
+  gap: 11px;
+  overflow: hidden;
+}
+
+.auth-panel .auth-input-control > svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.auth-panel .auth-input-control input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.auth-panel .auth-input-control input:focus {
+  border: 0;
+  box-shadow: none;
+}
+
+.auth-panel .auth-password-toggle {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.auth-panel .auth-password-toggle:hover,
+.auth-panel .auth-password-toggle:focus-visible {
+  color: var(--ink);
+  background: var(--surface-soft);
+}
