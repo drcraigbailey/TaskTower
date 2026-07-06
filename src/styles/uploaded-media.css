@@ -1,0 +1,34 @@
+.adult-avatar,
+.current-house-card > span,
+.image-picker__preview--round {
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.adult-avatar img,
+.current-house-card > span img,
+.image-picker__preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  padding: 4%;
+  border-radius: inherit;
+  background: var(--surface-raised);
+}
+
+.image-picker__preview--square img {
+  object-fit: contain;
+}
+
+.manual-reset-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.manual-reset-panel p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
