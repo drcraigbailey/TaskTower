@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 import './App.css'
 import './styles/dwellio-loader.css'
 import orbitLoader from './assets/branding/dwellio-orbit-loader.svg'
+import startupSplash from '../source-assets/branding/dwellio-splash-reference.jpg'
 import { useTaskTower } from './context/TaskTowerContext.jsx'
 import { LoginPage, RegisterPage } from './pages/AuthPages.jsx'
 import { ChoreDashboardPage, ChoreDetailsPage, ChoreEditorPage } from './pages/ChorePages.jsx'
@@ -16,6 +17,7 @@ import HouseholdHubPage from './features/households/HouseholdHubPage.jsx'
 import ActivityPage from './features/activity/ActivityPage.jsx'
 
 const ROUTE_TRANSITION_MS = 420
+const STARTUP_SPLASH_MS = 1450
 
 function LoadingContent({ size = 148 }) {
   return (
@@ -35,6 +37,38 @@ function RouteLoading({ label = 'Loading Dwellio', size = 148 }) {
   return (
     <div className="route-loading" role="status" aria-live="polite" aria-label={label}>
       <LoadingContent size={size} />
+    </div>
+  )
+}
+
+function StartupSplash() {
+  return (
+    <div
+      role="img"
+      aria-label="Dwellio. A cleaner home. A happier home."
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        width: '100vw',
+        height: '100dvh',
+        overflow: 'hidden',
+        background: '#FBF9F4',
+      }}
+    >
+      <img
+        src={startupSplash}
+        alt=""
+        aria-hidden="true"
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center',
+          userSelect: 'none',
+        }}
+      />
     </div>
   )
 }
@@ -109,6 +143,12 @@ function App() {
   const location = useLocation()
   const [displayedLocation, setDisplayedLocation] = useState(location)
   const [transitioning, setTransitioning] = useState(false)
+  const [showStartupSplash, setShowStartupSplash] = useState(true)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowStartupSplash(false), STARTUP_SPLASH_MS)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   useLayoutEffect(() => {
     if (location.key === displayedLocation.key) return undefined
@@ -122,6 +162,7 @@ function App() {
     return () => window.clearTimeout(timer)
   }, [displayedLocation.key, location])
 
+  if (showStartupSplash) return <StartupSplash />
   if (transitioning) return <RouteLoading label="Loading page" size={112} />
   return <AppRoutes location={displayedLocation} />
 }
