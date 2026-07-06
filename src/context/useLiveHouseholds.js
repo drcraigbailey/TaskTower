@@ -120,8 +120,18 @@ export default function useLiveHouseholds(user, profile, showToast, haptic) {
   useEffect(() => {
     if (!user || !activeHouse?.id) return undefined
     let cancelled = false
-    const refresh = () => refreshActiveHouse().catch((error) => {
-      if (!cancelled) showToast(friendlyError(error), 'error')
+    const refresh = () => refreshActiveHouse().catch(async (error) => {
+      if (cancelled) return
+      if (friendlyError(error) === 'That household is no longer available.') {
+        try {
+          await refreshHouses(user)
+          return
+        } catch (refreshError) {
+          if (!cancelled) showToast(friendlyError(refreshError), 'error')
+          return
+        }
+      }
+      showToast(friendlyError(error), 'error')
     })
     refresh()
     if (!supabase) return undefined
@@ -142,7 +152,7 @@ export default function useLiveHouseholds(user, profile, showToast, haptic) {
       cancelled = true
       supabase.removeChannel(channel)
     }
-  }, [activeHouse?.id, refreshActiveHouse, showToast, user?.id])
+  }, [activeHouse?.id, refreshActiveHouse, refreshHouses, showToast, user?.id])
 
   return {
     householdsReady,
