@@ -2,7 +2,7 @@
 <resources>
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#FBF9F4</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/dwellio_splash_transparent</item>
         <item name="windowSplashScreenIconBackgroundColor">#FBF9F4</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
