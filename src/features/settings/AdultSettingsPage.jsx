@@ -1,4 +1,4 @@
-import { Copy, Home, LogOut, Moon, Save, ShieldCheck, UserRound, Users } from 'lucide-react'
+import { BellRing, CheckCircle2, ClipboardList, Copy, Home, LogOut, MessageCircle, Moon, Save, ShieldCheck, ShoppingBasket, Trophy, UserRound, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MemberAvatar } from '../../components/adult/AdultUi.jsx'
@@ -6,6 +6,96 @@ import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
 import BottomNav from '../../components/BottomNav.jsx'
 import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import { useTaskTower } from '../../context/TaskTowerContext.jsx'
+import {
+  getNotificationPermissionStatus,
+  loadNotificationPreferences,
+  saveNotificationPreferences,
+  setNativeNotificationsEnabled,
+} from '../../lib/pushNotifications.js'
+
+const notificationRows = [
+  ['messages', 'Household messages', 'New messages from housemates', MessageCircle],
+  ['notices', 'Notices and urgent updates', 'Shared household announcements', BellRing],
+  ['shopping', 'Shopping-list changes', 'Items added, purchased or removed', ShoppingBasket],
+  ['taskReminders', 'Task reminders', 'Tasks due soon or overdue', ClipboardList],
+  ['taskCompletions', 'Task completions', 'When another member completes a task', CheckCircle2],
+  ['monthlyResults', 'Monthly results', 'Winners and household summaries', Trophy],
+]
+
+function NotificationSettingsPanel({ showToast }) {
+  const [preferences, setPreferences] = useState(null)
+  const [permission, setPermission] = useState('checking')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    Promise.all([loadNotificationPreferences(), getNotificationPermissionStatus()]).then(([nextPreferences, nextPermission]) => {
+      if (!active) return
+      setPreferences(nextPreferences)
+      setPermission(nextPermission)
+    })
+    return () => { active = false }
+  }, [])
+
+  if (!preferences) return null
+
+  const toggleMaster = async () => {
+    if (saving) return
+    setSaving(true)
+    try {
+      const next = await setNativeNotificationsEnabled(!preferences.enabled)
+      setPreferences((current) => ({ ...current, ...next }))
+      setPermission(next.permission || await getNotificationPermissionStatus())
+      if (next.enabled) showToast?.('Notifications enabled on this device.')
+      else if (next.permission === 'denied') showToast?.('Notifications are blocked in Android settings.', 'neutral')
+      else showToast?.('Notifications disabled on this device.', 'neutral')
+    } catch (error) {
+      showToast?.(error.message || 'Notification settings could not be changed.', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const togglePreference = async (key) => {
+    const next = { ...preferences, [key]: !preferences[key] }
+    setPreferences(next)
+    try {
+      await saveNotificationPreferences(next)
+    } catch (error) {
+      setPreferences(preferences)
+      showToast?.(error.message || 'Notification preference could not be saved.', 'error')
+    }
+  }
+
+  const statusText = permission === 'granted'
+    ? 'Notifications allowed on this device'
+    : permission === 'denied'
+      ? 'Notifications are blocked in Android settings'
+      : permission === 'web'
+        ? 'Preferences will apply in the Android app'
+        : preferences.enabled
+          ? 'Android will ask for permission when required'
+          : 'Notifications are disabled on this device'
+
+  return (
+    <section className="adult-panel notification-settings-panel">
+      <div className="notification-master-row">
+        <div><span className="settings-icon"><BellRing size={19} /></span><span><strong>Allow notifications</strong><small>{statusText}</small></span></div>
+        <button type="button" className={`toggle ${preferences.enabled && permission !== 'denied' ? 'active' : ''}`} onClick={toggleMaster} disabled={saving} aria-pressed={preferences.enabled && permission !== 'denied'}><i /></button>
+      </div>
+      <div className={`notification-preference-list ${preferences.enabled ? '' : 'disabled'}`}>
+        {notificationRows.map(([key, title, description, Icon]) => (
+          <div className="notification-preference-row" key={key}>
+            <Icon size={17} />
+            <span><strong>{title}</strong><small>{description}</small></span>
+            <button type="button" className={`toggle toggle--small ${preferences[key] ? 'active' : ''}`} onClick={() => togglePreference(key)} disabled={!preferences.enabled} aria-pressed={preferences[key]}><i /></button>
+          </div>
+        ))}
+      </div>
+      {permission === 'denied' && <p className="notification-settings-note">Android has blocked notification permission. Open Dwellio in Android Settings → Notifications to allow it again.</p>}
+    </section>
+  )
+}
 
 export default function AdultSettingsPage() {
   const navigate = useNavigate()
@@ -18,11 +108,7 @@ export default function AdultSettingsPage() {
 
   useEffect(() => {
     if (!activeHouse) return
-    setForm({
-      name: activeHouse.name,
-      towerHeight: activeHouse.towerHeight || 20,
-      monthlyResetDay: activeHouse.monthlyResetDay || 1,
-    })
+    setForm({ name: activeHouse.name, towerHeight: activeHouse.towerHeight || 20, monthlyResetDay: activeHouse.monthlyResetDay || 1 })
   }, [activeHouse])
 
   if (!activeHouse) return null
@@ -33,37 +119,23 @@ export default function AdultSettingsPage() {
     event.preventDefault()
     setSaving(true)
     setError('')
-    try {
-      await updateHouse(form)
-    } catch (err) {
-      setError(err.message || 'The household changes could not be saved.')
-    } finally {
-      setSaving(false)
-    }
+    try { await updateHouse(form) }
+    catch (err) { setError(err.message || 'The household changes could not be saved.') }
+    finally { setSaving(false) }
   }
 
   const copyCode = async () => {
     if (!activeHouse.joinCode) return
-    try {
-      await navigator.clipboard.writeText(activeHouse.joinCode)
-      showToast('Invite code copied.')
-    } catch {
-      showToast(`Invite code: ${activeHouse.joinCode}`, 'neutral')
-    }
+    try { await navigator.clipboard.writeText(activeHouse.joinCode); showToast('Invite code copied.') }
+    catch { showToast(`Invite code: ${activeHouse.joinCode}`, 'neutral') }
   }
 
   const leave = async () => {
     setLeaving(true)
     setError('')
-    try {
-      await leaveHouse(activeHouse.id)
-      setConfirmLeave(false)
-      navigate('/menu')
-    } catch (err) {
-      setError(err.message || 'The household could not be left.')
-    } finally {
-      setLeaving(false)
-    }
+    try { await leaveHouse(activeHouse.id); setConfirmLeave(false); navigate('/menu') }
+    catch (err) { setError(err.message || 'The household could not be left.') }
+    finally { setLeaving(false) }
   }
 
   return (
@@ -71,25 +143,17 @@ export default function AdultSettingsPage() {
       <section className="mobile-screen adult-settings with-bottom-space">
         <ScreenHeader title="Settings" subtitle={activeHouse.name} />
         <section className="adult-profile-card"><MemberAvatar name={profile.username} size="lg" online /><div><small>Your profile</small><h1>{profile.username}</h1><p>{activeHouse.role === 'owner' ? 'Owner' : 'Member'} · {activeHouse.name}</p></div><button onClick={() => navigate('/settings')}><UserRound size={18} /></button></section>
-
         <form className="form-stack editor-form" onSubmit={save}>
           <div className="activity-title"><Home size={20} /><h2>Household details</h2></div>
           <label className="field"><span>Household name</span><input name="name" value={form.name} onChange={update} minLength="2" maxLength="80" required disabled={activeHouse.role !== 'owner'} /></label>
-          <div className="form-grid">
-            <label className="field"><span>Tower height</span><input name="towerHeight" type="number" value={form.towerHeight} onChange={update} min="5" max="100" disabled={activeHouse.role !== 'owner'} /></label>
-            <label className="field"><span>Monthly reset day</span><input name="monthlyResetDay" type="number" value={form.monthlyResetDay} onChange={update} min="1" max="28" disabled={activeHouse.role !== 'owner'} /></label>
-          </div>
+          <div className="form-grid"><label className="field"><span>Tower height</span><input name="towerHeight" type="number" value={form.towerHeight} onChange={update} min="5" max="100" disabled={activeHouse.role !== 'owner'} /></label><label className="field"><span>Monthly reset day</span><input name="monthlyResetDay" type="number" value={form.monthlyResetDay} onChange={update} min="1" max="28" disabled={activeHouse.role !== 'owner'} /></label></div>
           {activeHouse.joinCode && <label className="field"><span>Invite code</span><div className="field-control"><input value={activeHouse.joinCode} readOnly /><button type="button" onClick={copyCode} aria-label="Copy invite code"><Copy size={18} /></button></div></label>}
           {error && <div className="inline-message inline-message--error">{error}</div>}
           {activeHouse.role === 'owner' && <button className="primary-button" disabled={saving}><Save size={18} /> {saving ? 'Saving…' : 'Save household changes'}</button>}
         </form>
-
-        <section className="adult-panel">
-          <div className="activity-title"><Users size={20} /><h2>Members</h2></div>
-          <div className="adult-member-row">{activeHouse.members.map((member) => <div key={member.id}><MemberAvatar name={member.username} online /><strong>{member.username}</strong><small>{member.role}</small></div>)}</div>
-        </section>
-
+        <section className="adult-panel"><div className="activity-title"><Users size={20} /><h2>Members</h2></div><div className="adult-member-row">{activeHouse.members.map((member) => <div key={member.id}><MemberAvatar name={member.username} online /><strong>{member.username}</strong><small>{member.role}</small></div>)}</div></section>
         <section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section>
+        <NotificationSettingsPanel showToast={showToast} />
         <div className="adult-owner-note"><ShieldCheck size={19} /><span><strong>{activeHouse.role === 'owner' ? 'Household owner' : 'Household member'}</strong><small>{activeHouse.role === 'owner' ? 'Household changes are saved for everyone.' : 'Only the owner can change shared household details.'}</small></span></div>
         {activeHouse.role !== 'owner' && <button className="danger-button" onClick={() => setConfirmLeave(true)}>Leave household</button>}
         <button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button>
@@ -102,7 +166,7 @@ export default function AdultSettingsPage() {
 
 export function AdultProfileSettingsPage() {
   const navigate = useNavigate()
-  const { logout, profile, setProfile, theme, setTheme } = useTaskTower()
+  const { logout, profile, setProfile, showToast, theme, setTheme } = useTaskTower()
   const [username, setUsername] = useState(profile.username)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -110,17 +174,11 @@ export function AdultProfileSettingsPage() {
   useEffect(() => setUsername(profile.username), [profile.username])
   const signOut = async () => { await logout(); navigate('/login') }
   const save = async (event) => {
-    event.preventDefault()
-    setSaving(true)
-    setError('')
-    try {
-      await setProfile({ ...profile, username })
-    } catch (err) {
-      setError(err.message || 'The profile could not be saved.')
-    } finally {
-      setSaving(false)
-    }
+    event.preventDefault(); setSaving(true); setError('')
+    try { await setProfile({ ...profile, username }) }
+    catch (err) { setError(err.message || 'The profile could not be saved.') }
+    finally { setSaving(false) }
   }
 
-  return <AppShell><section className="mobile-screen adult-settings"><ScreenHeader title="Account settings" back="/menu" /><section className="adult-profile-card"><MemberAvatar name={profile.username} size="lg" online /><div><small>Your profile</small><h1>{profile.username}</h1><p>Personal account</p></div><UserRound size={18} /></section><form className="form-stack editor-form" onSubmit={save}><label className="field"><span>Display name</span><input value={username} onChange={(event) => setUsername(event.target.value)} minLength="1" maxLength="40" required /></label>{error && <div className="inline-message inline-message--error">{error}</div>}<button className="primary-button" disabled={saving}><Save size={18} /> {saving ? 'Saving…' : 'Save profile'}</button></form><section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section><button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button></section></AppShell>
+  return <AppShell><section className="mobile-screen adult-settings"><ScreenHeader title="Account settings" back="/menu" /><section className="adult-profile-card"><MemberAvatar name={profile.username} size="lg" online /><div><small>Your profile</small><h1>{profile.username}</h1><p>Personal account</p></div><UserRound size={18} /></section><form className="form-stack editor-form" onSubmit={save}><label className="field"><span>Display name</span><input value={username} onChange={(event) => setUsername(event.target.value)} minLength="1" maxLength="40" required /></label>{error && <div className="inline-message inline-message--error">{error}</div>}<button className="primary-button" disabled={saving}><Save size={18} /> {saving ? 'Saving…' : 'Save profile'}</button></form><section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section><NotificationSettingsPanel showToast={showToast} /><button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button></section></AppShell>
 }
