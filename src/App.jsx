@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import './App.css'
 import './styles/dwellio-loader.css'
@@ -17,7 +17,7 @@ import ActivityPage from './features/activity/ActivityPage.jsx'
 
 const ROUTE_TRANSITION_MS = 420
 
-function LoadingContent({ message = 'Opening your household…', size = 148 }) {
+function LoadingContent({ size = 148 }) {
   return (
     <div className="dwellio-loading__content">
       <img
@@ -27,61 +27,35 @@ function LoadingContent({ message = 'Opening your household…', size = 148 }) {
         aria-hidden="true"
         style={{ '--dwellio-loader-size': `${size}px` }}
       />
-      <span>{message}</span>
     </div>
   )
 }
 
-function RouteLoading({ message = 'Opening your household…' }) {
+function RouteLoading({ label = 'Loading Dwellio', size = 148 }) {
   return (
-    <div className="route-loading" role="status" aria-live="polite" aria-label={message}>
-      <LoadingContent message={message} />
-    </div>
-  )
-}
-
-function RouteTransitionLoader() {
-  const location = useLocation()
-  const firstRoute = useRef(true)
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    if (firstRoute.current) {
-      firstRoute.current = false
-      return undefined
-    }
-
-    setVisible(true)
-    const timer = window.setTimeout(() => setVisible(false), ROUTE_TRANSITION_MS)
-    return () => window.clearTimeout(timer)
-  }, [location.key])
-
-  if (!visible) return null
-
-  return (
-    <div className="route-transition-loader" role="status" aria-live="polite" aria-label="Loading page">
-      <LoadingContent message="Loading page…" size={112} />
+    <div className="route-loading" role="status" aria-live="polite" aria-label={label}>
+      <LoadingContent size={size} />
     </div>
   )
 }
 
 function StartPage() {
   const { activeHouse, authReady, householdsReady, user } = useTaskTower()
-  if (!authReady || (user && !householdsReady)) return <RouteLoading />
+  if (!authReady || (user && !householdsReady)) return <RouteLoading label="Opening your household" />
   if (!user) return <Navigate to="/login" replace />
   return <Navigate to={activeHouse ? `/house/${activeHouse.id}` : '/menu'} replace />
 }
 
 function RequireAuth({ children }) {
   const { authReady, user } = useTaskTower()
-  if (!authReady) return <RouteLoading message="Checking your account…" />
+  if (!authReady) return <RouteLoading label="Checking your account" />
   if (!user) return <Navigate to="/login" replace />
   return children
 }
 
 function PublicOnly({ children }) {
   const { authReady, user } = useTaskTower()
-  if (!authReady) return <RouteLoading message="Preparing Dwellio…" />
+  if (!authReady) return <RouteLoading label="Preparing Dwellio" />
   if (user) return <Navigate to="/" replace />
   return children
 }
@@ -97,41 +71,59 @@ function RequireHouse({ children }) {
     }
   }, [activeHouse?.id, houseId, matchingHouse, selectHouse])
 
-  if (!householdsReady) return <RouteLoading />
+  if (!householdsReady) return <RouteLoading label="Opening your household" />
   if (!matchingHouse) return <Navigate to="/menu" replace />
-  if (activeHouse?.id !== houseId) return <RouteLoading message="Opening this household…" />
+  if (activeHouse?.id !== houseId) return <RouteLoading label="Opening this household" />
   return children
 }
 
 const protectedRoute = (element) => <RequireAuth>{element}</RequireAuth>
 const householdRoute = (element) => protectedRoute(<RequireHouse>{element}</RequireHouse>)
 
-function App() {
+function AppRoutes({ location }) {
   return (
-    <>
-      <RouteTransitionLoader />
-      <Routes>
-        <Route path="/" element={<StartPage />} />
-        <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
-        <Route path="/register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
-        <Route path="/menu" element={protectedRoute(<HouseholdHubPage />)} />
-        <Route path="/house/new" element={protectedRoute(<AddHousePage />)} />
-        <Route path="/house/join" element={protectedRoute(<JoinHousePage />)} />
-        <Route path="/settings" element={protectedRoute(<AdultProfileSettingsPage />)} />
-        <Route path="/notifications" element={protectedRoute(<NotificationsPage />)} />
-        <Route path="/house/:houseId" element={householdRoute(<HouseholdDashboard />)} />
-        <Route path="/house/:houseId/chores" element={householdRoute(<ChoreDashboardPage />)} />
-        <Route path="/house/:houseId/chores/new" element={householdRoute(<ChoreEditorPage />)} />
-        <Route path="/house/:houseId/chores/:choreId" element={householdRoute(<ChoreDetailsPage />)} />
-        <Route path="/house/:houseId/chores/:choreId/edit" element={householdRoute(<ChoreEditorPage />)} />
-        <Route path="/house/:houseId/shopping" element={householdRoute(<ShoppingPage />)} />
-        <Route path="/house/:houseId/messages" element={householdRoute(<CommunicationPage />)} />
-        <Route path="/house/:houseId/activity" element={householdRoute(<ActivityPage />)} />
-        <Route path="/house/:houseId/settings" element={householdRoute(<AdultSettingsPage />)} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </>
+    <Routes location={location}>
+      <Route path="/" element={<StartPage />} />
+      <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
+      <Route path="/register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
+      <Route path="/menu" element={protectedRoute(<HouseholdHubPage />)} />
+      <Route path="/house/new" element={protectedRoute(<AddHousePage />)} />
+      <Route path="/house/join" element={protectedRoute(<JoinHousePage />)} />
+      <Route path="/settings" element={protectedRoute(<AdultProfileSettingsPage />)} />
+      <Route path="/notifications" element={protectedRoute(<NotificationsPage />)} />
+      <Route path="/house/:houseId" element={householdRoute(<HouseholdDashboard />)} />
+      <Route path="/house/:houseId/chores" element={householdRoute(<ChoreDashboardPage />)} />
+      <Route path="/house/:houseId/chores/new" element={householdRoute(<ChoreEditorPage />)} />
+      <Route path="/house/:houseId/chores/:choreId" element={householdRoute(<ChoreDetailsPage />)} />
+      <Route path="/house/:houseId/chores/:choreId/edit" element={householdRoute(<ChoreEditorPage />)} />
+      <Route path="/house/:houseId/shopping" element={householdRoute(<ShoppingPage />)} />
+      <Route path="/house/:houseId/messages" element={householdRoute(<CommunicationPage />)} />
+      <Route path="/house/:houseId/activity" element={householdRoute(<ActivityPage />)} />
+      <Route path="/house/:houseId/settings" element={householdRoute(<AdultSettingsPage />)} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
+}
+
+function App() {
+  const location = useLocation()
+  const [displayedLocation, setDisplayedLocation] = useState(location)
+  const [transitioning, setTransitioning] = useState(false)
+
+  useLayoutEffect(() => {
+    if (location.key === displayedLocation.key) return undefined
+
+    setTransitioning(true)
+    const timer = window.setTimeout(() => {
+      setDisplayedLocation(location)
+      setTransitioning(false)
+    }, ROUTE_TRANSITION_MS)
+
+    return () => window.clearTimeout(timer)
+  }, [displayedLocation.key, location])
+
+  if (transitioning) return <RouteLoading label="Loading page" size={112} />
+  return <AppRoutes location={displayedLocation} />
 }
 
 export default App
