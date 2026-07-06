@@ -1,4 +1,4 @@
-import { BellRing, CheckCircle2, ClipboardList, Copy, Home, LogOut, MessageCircle, Moon, Save, ShieldCheck, ShoppingBasket, Trophy, UserRound, Users } from 'lucide-react'
+import { BellRing, CheckCircle2, ClipboardList, Copy, Home, LogOut, MessageCircle, Moon, RotateCcw, Save, ShieldCheck, ShoppingBasket, Trophy, UserRound, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MemberAvatar } from '../../components/adult/AdultUi.jsx'
@@ -7,6 +7,7 @@ import BottomNav from '../../components/BottomNav.jsx'
 import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import ImagePicker from '../../components/ImagePicker.jsx'
 import { useTaskTower } from '../../context/TaskTowerContext.jsx'
+import { resetHouseholdProgressRecord } from '../../lib/liveMutations.js'
 import {
   getNotificationPermissionStatus,
   loadNotificationPreferences,
@@ -20,7 +21,7 @@ const notificationRows = [
   ['shopping', 'Shopping-list changes', 'Items added, purchased or removed', ShoppingBasket],
   ['taskReminders', 'Task reminders', 'Tasks due soon or overdue', ClipboardList],
   ['taskCompletions', 'Task completions', 'When another member completes a task', CheckCircle2],
-  ['monthlyResults', 'Monthly results', 'Winners and household summaries', Trophy],
+  ['monthlyResults', 'Progress results', 'Winners and household summaries', Trophy],
 ]
 
 function NotificationSettingsPanel({ showToast }) {
@@ -100,25 +101,27 @@ function NotificationSettingsPanel({ showToast }) {
 
 export default function AdultSettingsPage() {
   const navigate = useNavigate()
-  const { activeHouse, leaveHouse, logout, profile, showToast, theme, setTheme, updateHouse } = useTaskTower()
-  const [form, setForm] = useState({ name: '', towerHeight: 20, monthlyResetDay: 1 })
+  const { activeHouse, leaveHouse, logout, profile, refreshActiveHouse, showToast, theme, setTheme, updateHouse } = useTaskTower()
+  const [form, setForm] = useState({ name: '' })
   const [saving, setSaving] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [confirmLeave, setConfirmLeave] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   const [error, setError] = useState('')
   const [pictureFile, setPictureFile] = useState(null)
   const [removePicture, setRemovePicture] = useState(false)
 
   useEffect(() => {
     if (!activeHouse) return
-    setForm({ name: activeHouse.name, towerHeight: activeHouse.towerHeight || 20, monthlyResetDay: activeHouse.monthlyResetDay || 1 })
+    setForm({ name: activeHouse.name })
     setPictureFile(null)
     setRemovePicture(false)
   }, [activeHouse])
 
   if (!activeHouse) return null
   const signOut = async () => { await logout(); navigate('/login') }
-  const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.type === 'number' ? Number(event.target.value) : event.target.value }))
+  const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
 
   const save = async (event) => {
     event.preventDefault()
@@ -147,6 +150,21 @@ export default function AdultSettingsPage() {
     finally { setLeaving(false) }
   }
 
+  const resetProgress = async () => {
+    setResetting(true)
+    setError('')
+    try {
+      await resetHouseholdProgressRecord(activeHouse.id)
+      await refreshActiveHouse()
+      setConfirmReset(false)
+      showToast('Household progress has been reset.')
+    } catch (err) {
+      setError(err.message || 'Household progress could not be reset.')
+    } finally {
+      setResetting(false)
+    }
+  }
+
   return (
     <AppShell>
       <section className="mobile-screen adult-settings with-bottom-space">
@@ -165,11 +183,17 @@ export default function AdultSettingsPage() {
             shape="square"
           />
           <label className="field"><span>Household name</span><input name="name" value={form.name} onChange={update} minLength="2" maxLength="80" required disabled={activeHouse.role !== 'owner'} /></label>
-          <div className="form-grid"><label className="field"><span>Tower height</span><input name="towerHeight" type="number" value={form.towerHeight} onChange={update} min="5" max="100" disabled={activeHouse.role !== 'owner'} /></label><label className="field"><span>Monthly reset day</span><input name="monthlyResetDay" type="number" value={form.monthlyResetDay} onChange={update} min="1" max="28" disabled={activeHouse.role !== 'owner'} /></label></div>
           {activeHouse.joinCode && <label className="field"><span>Invite code</span><div className="field-control"><input value={activeHouse.joinCode} readOnly /><button type="button" onClick={copyCode} aria-label="Copy invite code"><Copy size={18} /></button></div></label>}
           {error && <div className="inline-message inline-message--error">{error}</div>}
           {activeHouse.role === 'owner' && <button className="primary-button" disabled={saving}><Save size={18} /> {saving ? 'Saving…' : 'Save household changes'}</button>}
         </form>
+        {activeHouse.role === 'owner' && (
+          <section className="adult-panel manual-reset-panel">
+            <div className="activity-title"><RotateCcw size={20} /><h2>Reset progress</h2></div>
+            <p>Start a fresh household competition whenever you choose. Previous task completions remain in the activity history, but everyone’s current points and floors return to zero.</p>
+            <button type="button" className="danger-button" onClick={() => setConfirmReset(true)} disabled={resetting}><RotateCcw size={18} /> Reset household progress</button>
+          </section>
+        )}
         <section className="adult-panel"><div className="activity-title"><Users size={20} /><h2>Members</h2></div><div className="adult-member-row">{activeHouse.members.map((member) => <div key={member.id}><MemberAvatar name={member.username} image={member.profileImage} online /><strong>{member.username}</strong><small>{member.role}</small></div>)}</div></section>
         <section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section>
         <NotificationSettingsPanel showToast={showToast} />
@@ -179,6 +203,7 @@ export default function AdultSettingsPage() {
         <BottomNav />
       </section>
       <ConfirmDialog open={confirmLeave} title="Leave this household?" message={`You will lose access to ${activeHouse.name} until you are invited again.`} confirmLabel="Leave household" busy={leaving} onConfirm={leave} onCancel={() => setConfirmLeave(false)} />
+      <ConfirmDialog open={confirmReset} title="Reset everyone’s progress?" message="Current points and floors will return to zero for every household member. Completed-task history will not be deleted." confirmLabel="Reset progress" busy={resetting} onConfirm={resetProgress} onCancel={() => setConfirmReset(false)} />
     </AppShell>
   )
 }
