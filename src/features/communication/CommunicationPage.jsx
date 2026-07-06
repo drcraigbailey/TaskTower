@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { MemberAvatar, StatusBadge } from '../../components/adult/AdultUi.jsx'
 import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
 import BottomNav from '../../components/BottomNav.jsx'
+import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import { useTaskTower } from '../../context/TaskTowerContext.jsx'
 
 const emptyNotice = { title: '', body: '', priority: 'normal', expiresInDays: '7' }
@@ -15,6 +16,7 @@ export default function CommunicationPage() {
   const [showNoticeForm, setShowNoticeForm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [pendingNoticeRemoval, setPendingNoticeRemoval] = useState(null)
   if (!activeHouse) return null
 
   const send = async () => {
@@ -46,12 +48,17 @@ export default function CommunicationPage() {
     }
   }
 
-  const removeNotice = async (id) => {
+  const removeNotice = async () => {
+    if (!pendingNoticeRemoval) return
+    setBusy(true)
     setError('')
     try {
-      await deleteNotice(id)
+      await deleteNotice(pendingNoticeRemoval.id)
+      setPendingNoticeRemoval(null)
     } catch (err) {
       setError(err.message || 'The notice could not be removed.')
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -76,7 +83,7 @@ export default function CommunicationPage() {
             </form>}
             <div className="notice-list">{notices.map((notice) => {
               const canDelete = notice.authorId === user.id || activeHouse.role === 'owner'
-              return <article className={`adult-notice-card adult-notice-card--${notice.priority}`} key={notice.id}><span><BellRing size={19} /></span><div><div><StatusBadge status={notice.priority === 'urgent' ? 'overdue' : notice.priority === 'important' ? 'attention' : 'current'} label={notice.priority} /><small>{notice.expiresAt ? `Expires in ${notice.expires}` : 'No expiry'}</small></div><h2>{notice.title}</h2><p>{notice.body}</p><footer><MemberAvatar name={notice.author} size="sm" /><span>Posted by {notice.author}</span>{canDelete && <button onClick={() => removeNotice(notice.id)} aria-label="Delete notice"><Trash2 size={17} /></button>}</footer></div></article>
+              return <article className={`adult-notice-card adult-notice-card--${notice.priority}`} key={notice.id}><span><BellRing size={19} /></span><div><div><StatusBadge status={notice.priority === 'urgent' ? 'overdue' : notice.priority === 'important' ? 'attention' : 'current'} label={notice.priority} /><small>{notice.expiresAt ? `Expires in ${notice.expires}` : 'No expiry'}</small></div><h2>{notice.title}</h2><p>{notice.body}</p><footer><MemberAvatar name={notice.author} size="sm" /><span>Posted by {notice.author}</span>{canDelete && <button onClick={() => setPendingNoticeRemoval(notice)} aria-label="Delete notice"><Trash2 size={17} /></button>}</footer></div></article>
             })}</div>
             {notices.length === 0 && <div className="empty-list"><span>📌</span><h2>No notices</h2><p>Post an update when the household needs to know something.</p></div>}
           </>
@@ -89,6 +96,7 @@ export default function CommunicationPage() {
         )}
         <BottomNav />
       </section>
+      <ConfirmDialog open={Boolean(pendingNoticeRemoval)} title="Delete this notice?" message={pendingNoticeRemoval ? `${pendingNoticeRemoval.title} will be permanently removed for the household.` : ''} confirmLabel="Delete notice" busy={busy} onConfirm={removeNotice} onCancel={() => setPendingNoticeRemoval(null)} />
     </AppShell>
   )
 }

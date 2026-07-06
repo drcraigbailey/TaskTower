@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
 import { AppShell, ScreenHeader } from '../components/AppShell.jsx'
+import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import { categoryMeta } from '../data/defaults.js'
 import { useTaskTower } from '../context/TaskTowerContext.jsx'
 
@@ -102,6 +103,7 @@ export function ChoreEditorPage() {
   const [form, setForm] = useState(existing || emptyChore)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const editing = Boolean(choreId)
 
   useEffect(() => {
@@ -133,6 +135,7 @@ export function ChoreEditorPage() {
     setError('')
     try {
       await deleteChore(existing.id)
+      setConfirmDelete(false)
       navigate(`/house/${houseId}/chores`)
     } catch (err) {
       setError(err.message || 'The task could not be removed.')
@@ -163,9 +166,10 @@ export function ChoreEditorPage() {
           </fieldset>
           {error && <div className="inline-message inline-message--error">{error}</div>}
           <button className="primary-button" disabled={saving}><Save size={18} /> {saving ? 'Saving…' : editing ? 'Save changes' : 'Add task'}</button>
-          {editing && <button type="button" className="danger-button" onClick={remove} disabled={saving}><Trash2 size={18} /> Delete task</button>}
+          {editing && <button type="button" className="danger-button" onClick={() => setConfirmDelete(true)} disabled={saving}><Trash2 size={18} /> Delete task</button>}
         </form>
       </section>
+      <ConfirmDialog open={confirmDelete} title="Delete this task?" message={`${form.name || 'This task'} will be permanently removed for everyone in the household.`} confirmLabel="Delete task" busy={saving} onConfirm={remove} onCancel={() => setConfirmDelete(false)} />
     </AppShell>
   )
 }

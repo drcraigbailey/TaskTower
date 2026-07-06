@@ -8,10 +8,12 @@ import { useTaskTower } from '../context/TaskTowerContext.jsx'
 function AuthLayout({ mode }) {
   const isRegister = mode === 'register'
   const navigate = useNavigate()
-  const { login, register, loading, isSupabaseConfigured } = useTaskTower()
+  const { login, register, resendConfirmation, loading, isSupabaseConfigured } = useTaskTower()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [confirmationEmail, setConfirmationEmail] = useState('')
+  const [resending, setResending] = useState(false)
   const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '' })
 
   const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
@@ -34,10 +36,24 @@ function AuthLayout({ mode }) {
       return
     }
     if (result.needsEmailConfirmation) {
-      setMessage('Account created. Check your email to confirm it, then return here to log in.')
+      setConfirmationEmail(form.email)
+      setMessage('Account created. Open the verification email on this device; the confirmation link will return you to Dwellio.')
       return
     }
     navigate(result.houseId ? `/house/${result.houseId}` : '/menu')
+  }
+
+  const resendEmail = async () => {
+    if (!confirmationEmail || resending) return
+    setError('')
+    setResending(true)
+    const result = await resendConfirmation(confirmationEmail)
+    setResending(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    setMessage('A fresh verification email has been sent. Use the newest link.')
   }
 
   return (
@@ -92,7 +108,7 @@ function AuthLayout({ mode }) {
           )}
           {!isSupabaseConfigured && <div className="inline-message inline-message--error">Live accounts are unavailable because this build has no Supabase environment values.</div>}
           {error && <div className="inline-message inline-message--error">{error}</div>}
-          {message && <div className="inline-message inline-message--success">{message}</div>}
+          {message && <div className="inline-message inline-message--success auth-confirmation-message"><span>{message}</span>{confirmationEmail && <button type="button" onClick={resendEmail} disabled={resending}>{resending ? 'Sending…' : 'Resend verification email'}</button>}</div>}
           <button className="primary-button" disabled={loading || !isSupabaseConfigured}>
             {loading ? 'Opening the door…' : isRegister ? 'Create account' : 'Log in'}
           </button>

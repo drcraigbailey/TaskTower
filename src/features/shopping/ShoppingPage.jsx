@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { AdultSectionHeader, EmptyState, StatusBadge } from '../../components/adult/AdultUi.jsx'
 import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
 import BottomNav from '../../components/BottomNav.jsx'
+import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import { useTaskTower } from '../../context/TaskTowerContext.jsx'
 
 const tabs = [['low', 'Running low'], ['out', 'Out'], ['list', 'Shopping list']]
@@ -15,6 +16,8 @@ export default function ShoppingPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [busy, setBusy] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const [pendingRemoval, setPendingRemoval] = useState(null)
   const [error, setError] = useState('')
   const visible = useMemo(() => shoppingItems.filter((item) => item.state === tab && item.name.toLowerCase().includes(query.toLowerCase())), [shoppingItems, query, tab])
   if (!activeHouse) return null
@@ -46,12 +49,17 @@ export default function ShoppingPage() {
     }
   }
 
-  const remove = async (id) => {
+  const remove = async () => {
+    if (!pendingRemoval) return
+    setRemoving(true)
     setError('')
     try {
-      await deleteShoppingItem(id)
+      await deleteShoppingItem(pendingRemoval.id)
+      setPendingRemoval(null)
     } catch (err) {
       setError(err.message || 'The item could not be removed.')
+    } finally {
+      setRemoving(false)
     }
   }
 
@@ -79,13 +87,14 @@ export default function ShoppingPage() {
               <div><strong>{item.name}</strong><small>{item.detail || 'No extra details'} · {item.category}</small></div>
               {tab === 'list'
                 ? <button className="purchase-button" onClick={() => purchase(item.id)} aria-label={`Mark ${item.name} purchased`}><Check size={18} /></button>
-                : <><StatusBadge status={tab === 'out' ? 'overdue' : 'attention'} label={tab === 'out' ? 'Out' : 'Low'} /><button className="purchase-button" onClick={() => remove(item.id)} aria-label={`Remove ${item.name}`}><Trash2 size={16} /></button></>}
+                : <><StatusBadge status={tab === 'out' ? 'overdue' : 'attention'} label={tab === 'out' ? 'Out' : 'Low'} /><button className="purchase-button" onClick={() => setPendingRemoval(item)} aria-label={`Remove ${item.name}`}><Trash2 size={16} /></button></>}
             </article>
           ))}</div> : <EmptyState icon={ShoppingBasket} title="Nothing here" text="There are no matching items in this section." action={<button className="secondary-button" onClick={() => setQuery('')}>Clear search</button>} />}
         </section>
         <button className="primary-button shopping-add" onClick={() => setShowForm(true)}><Plus size={18} /> Add item</button>
         <BottomNav />
       </section>
+      <ConfirmDialog open={Boolean(pendingRemoval)} title="Remove this item?" message={pendingRemoval ? `${pendingRemoval.name} will be removed from the household list.` : ''} confirmLabel="Remove item" busy={removing} onConfirm={remove} onCancel={() => setPendingRemoval(null)} />
     </AppShell>
   )
 }

@@ -31,6 +31,7 @@ const THEME_KEY = 'tasktower.theme'
 const confirmationRedirectUrl = () => {
   const configuredUrl = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim()
   if (configuredUrl) return configuredUrl
+
   return `${window.location.origin}/login`
 }
 
@@ -57,8 +58,13 @@ export function TaskTowerProvider({ children }) {
 
   const haptic = useCallback(async (kind = 'light') => {
     try {
-      if (kind === 'success') await Haptics.notification({ type: NotificationType.Success })
-      else await Haptics.impact({ style: kind === 'medium' ? ImpactStyle.Medium : ImpactStyle.Light })
+      if (kind === 'success') {
+        await Haptics.notification({ type: NotificationType.Success })
+      } else {
+        await Haptics.impact({
+          style: kind === 'medium' ? ImpactStyle.Medium : ImpactStyle.Light,
+        })
+      }
     } catch {
       // Native feedback is optional on web.
     }
@@ -68,7 +74,11 @@ export function TaskTowerProvider({ children }) {
 
   const requireUser = useCallback(() => {
     requireDatabase()
-    if (!user) throw new Error('Please sign in before changing household data.')
+
+    if (!user) {
+      throw new Error('Please sign in before changing household data.')
+    }
+
     return user
   }, [user])
 
@@ -82,18 +92,27 @@ export function TaskTowerProvider({ children }) {
       setAuthReady(true)
       return undefined
     }
+
     let active = true
+
     supabase.auth.getSession().then(({ data, error }) => {
       if (!active) return
-      if (error) showToast(friendlyError(error), 'error')
+
+      if (error) {
+        showToast(friendlyError(error), 'error')
+      }
+
       setUser(data?.session?.user || null)
       setAuthReady(true)
     })
+
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return
+
       setUser(session?.user || null)
       setAuthReady(true)
     })
+
     return () => {
       active = false
       data.subscription.unsubscribe()
@@ -105,40 +124,79 @@ export function TaskTowerProvider({ children }) {
       setProfileState(defaultProfile)
       return
     }
+
     let cancelled = false
+
     loadProfile(user)
       .then((nextProfile) => {
         if (cancelled) return
+
         setProfileState(nextProfile)
         localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile))
       })
-      .catch((error) => !cancelled && showToast(friendlyError(error), 'error'))
-    return () => { cancelled = true }
+      .catch((error) => {
+        if (!cancelled) {
+          showToast(friendlyError(error), 'error')
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [showToast, user?.id])
 
   useEffect(() => {
     let cleanup = () => {}
+
     initialisePushNotifications(user?.id)
-      .then((nextCleanup) => { cleanup = nextCleanup })
-      .catch((error) => console.warn('Push notification setup was skipped', error))
+      .then((nextCleanup) => {
+        cleanup = nextCleanup
+      })
+      .catch((error) => {
+        console.warn('Push notification setup was skipped', error)
+      })
+
     return () => cleanup()
   }, [user?.id])
 
   const login = async ({ email, password }) => {
     setLoading(true)
+
     try {
       const db = requireDatabase()
-      const { data, error } = await db.auth.signInWithPassword({ email, password })
+
+      const { data, error } = await db.auth.signInWithPassword({
+        email,
+        password,
+      })
+
       if (error) throw error
+
       setUser(data.user)
+
       const nextProfile = await loadProfile(data.user)
+
       setProfileState(nextProfile)
       localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile))
+
       const nextHouses = await household.refreshHouses(data.user)
+
       await haptic('success')
-      return { ok: true, houseId: nextHouses.find((house) => house.id === household.storedHouseId())?.id || nextHouses[0]?.id || null }
+
+      return {
+        ok: true,
+        houseId:
+          nextHouses.find(
+            (house) => house.id === household.storedHouseId(),
+          )?.id ||
+          nextHouses[0]?.id ||
+          null,
+      }
     } catch (error) {
-      return { ok: false, error: friendlyError(error) }
+      return {
+        ok: false,
+        error: friendlyError(error),
+      }
     } finally {
       setLoading(false)
     }
@@ -146,34 +204,56 @@ export function TaskTowerProvider({ children }) {
 
   const register = async ({ username, email, password }) => {
     setLoading(true)
+
     try {
       const db = requireDatabase()
+
       const { data, error } = await db.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: confirmationRedirectUrl(),
-          data: { username: username.trim() },
+          data: {
+            username: username.trim(),
+          },
         },
       })
+
       if (error) throw error
-      if (!data.session) return { ok: true, needsEmailConfirmation: true }
+
+      if (!data.session) {
+        return {
+          ok: true,
+          needsEmailConfirmation: true,
+        }
+      }
+
       setUser(data.session.user)
+
       const nextProfile = await loadProfile(data.session.user)
+
       setProfileState(nextProfile)
       localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile))
+
       await household.refreshHouses(data.session.user)
       await haptic('success')
+
       return { ok: true }
     } catch (error) {
-      return { ok: false, error: friendlyError(error) }
+      return {
+        ok: false,
+        error: friendlyError(error),
+      }
     } finally {
       setLoading(false)
     }
   }
 
   const logout = async () => {
-    if (supabase) await supabase.auth.signOut()
+    if (supabase) {
+      await supabase.auth.signOut()
+    }
+
     setUser(null)
     setProfileState(defaultProfile)
     localStorage.removeItem(PROFILE_KEY)
@@ -183,60 +263,126 @@ export function TaskTowerProvider({ children }) {
   const createHouse = async (name) => {
     const signedInUser = requireUser()
     const result = await createHouseRecord(name)
-    const nextHouses = await household.refreshHouses(signedInUser, result.household_id)
-    const house = nextHouses.find((item) => item.id === result.household_id)
-      || { id: result.household_id, name: result.name, role: 'owner', members: [] }
-    const selected = { ...house, joinCode: result.join_code || null }
+
+    const nextHouses = await household.refreshHouses(
+      signedInUser,
+      result.household_id,
+    )
+
+    const house =
+      nextHouses.find((item) => item.id === result.household_id) || {
+        id: result.household_id,
+        name: result.name,
+        role: 'owner',
+        members: [],
+      }
+
+    const selected = {
+      ...house,
+      joinCode: result.join_code || null,
+    }
+
     household.setActiveHouse(selected)
     household.persistHouseId(selected.id)
+
     showToast(`${selected.name} is ready.`)
     await haptic('success')
+
     return selected
   }
 
   const joinHouse = async (code) => {
     const signedInUser = requireUser()
     const result = await joinHouseRecord(code)
-    const nextHouses = await household.refreshHouses(signedInUser, result.household_id)
-    const house = nextHouses.find((item) => item.id === result.household_id)
-    if (!house) throw new Error('The household was joined but could not be loaded.')
+
+    const nextHouses = await household.refreshHouses(
+      signedInUser,
+      result.household_id,
+    )
+
+    const house = nextHouses.find(
+      (item) => item.id === result.household_id,
+    )
+
+    if (!house) {
+      throw new Error('The household was joined but could not be loaded.')
+    }
+
     household.setActiveHouse(house)
     household.persistHouseId(house.id)
+
     showToast(`Joined ${house.name}.`)
     await haptic('success')
+
     return house
   }
 
-  const leaveHouse = async (houseId = household.activeHouse?.id) => {
+  const leaveHouse = async (
+    houseId = household.activeHouse?.id,
+  ) => {
     const signedInUser = requireUser()
+
     if (!houseId) return
+
     await leaveHouseRecord(houseId)
     await household.refreshHouses(signedInUser)
+
     showToast('You left the household.', 'neutral')
   }
 
   const updateHouse = async (changes) => {
     requireUser()
-    if (!household.activeHouse?.id) throw new Error('Choose a household first.')
-    const data = await updateHouseRecord(household.activeHouse.id, changes)
+
+    if (!household.activeHouse?.id) {
+      throw new Error('Choose a household first.')
+    }
+
+    const data = await updateHouseRecord(
+      household.activeHouse.id,
+      changes,
+    )
+
     const next = {
       ...household.activeHouse,
       name: data.name,
       towerHeight: data.tower_height,
       monthlyResetDay: data.monthly_reset_day,
     }
+
     household.setActiveHouse(next)
-    household.setHouses((current) => current.map((house) => house.id === next.id ? { ...house, ...next } : house))
+
+    household.setHouses((current) =>
+      current.map((house) =>
+        house.id === next.id
+          ? {
+              ...house,
+              ...next,
+            }
+          : house,
+      ),
+    )
+
     showToast('Household settings saved.')
+
     return next
   }
 
   const setProfile = async (updater) => {
     const signedInUser = requireUser()
-    const next = typeof updater === 'function' ? updater(profile) : updater
-    const saved = await saveProfileRecord(signedInUser.id, next)
+
+    const next =
+      typeof updater === 'function'
+        ? updater(profile)
+        : updater
+
+    const saved = await saveProfileRecord(
+      signedInUser.id,
+      next,
+    )
+
     setProfileState(saved)
     localStorage.setItem(PROFILE_KEY, JSON.stringify(saved))
+
     return saved
   }
 
@@ -258,22 +404,71 @@ export function TaskTowerProvider({ children }) {
     joinHouse,
     leaveHouse,
     updateHouse,
-    saveTask: (task) => saveTask(household.activeHouse?.id, requireUser().id, household.chores, task),
+
+    saveTask: (task) =>
+      saveTask(
+        household.activeHouse?.id,
+        requireUser().id,
+        household.chores,
+        task,
+      ),
+
     deleteTask: deleteTaskRecord,
-    reorderTask: (id, direction) => reorderTaskRecords(household.chores, id, direction),
+
+    reorderTask: (id, direction) =>
+      reorderTaskRecords(
+        household.chores,
+        id,
+        direction,
+      ),
+
     completeTask: completeTaskRecord,
-    addShoppingItem: (item) => addShoppingRecord(household.activeHouse?.id, requireUser().id, item),
-    purchaseShoppingItem: (id) => purchaseShoppingRecord(id, requireUser().id),
+
+    addShoppingItem: (item) =>
+      addShoppingRecord(
+        household.activeHouse?.id,
+        requireUser().id,
+        item,
+      ),
+
+    purchaseShoppingItem: (id) =>
+      purchaseShoppingRecord(
+        id,
+        requireUser().id,
+      ),
+
     deleteShoppingItem: deleteShoppingRecord,
-    sendMessage: (body) => sendMessageRecord(household.activeHouse?.id, requireUser().id, body),
-    createNotice: (notice) => createNoticeRecord(household.activeHouse?.id, requireUser().id, notice),
+
+    sendMessage: (body) =>
+      sendMessageRecord(
+        household.activeHouse?.id,
+        requireUser().id,
+        body,
+      ),
+
+    createNotice: (notice) =>
+      createNoticeRecord(
+        household.activeHouse?.id,
+        requireUser().id,
+        notice,
+      ),
+
     deleteNotice: deleteNoticeRecord,
-    markNotificationsRead: () => markNotificationsReadRecord(requireUser().id),
+
+    markNotificationsRead: () =>
+      markNotificationsReadRecord(
+        requireUser().id,
+      ),
+
     showToast,
     haptic,
   }
 
-  return <TaskTowerContext.Provider value={value}>{children}</TaskTowerContext.Provider>
+  return (
+    <TaskTowerContext.Provider value={value}>
+      {children}
+    </TaskTowerContext.Provider>
+  )
 }
 
 export const useTaskTower = () => useContext(TaskTowerContext)

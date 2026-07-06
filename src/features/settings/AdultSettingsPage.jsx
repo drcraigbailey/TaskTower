@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { MemberAvatar } from '../../components/adult/AdultUi.jsx'
 import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
 import BottomNav from '../../components/BottomNav.jsx'
+import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import { useTaskTower } from '../../context/TaskTowerContext.jsx'
 
 export default function AdultSettingsPage() {
@@ -11,6 +12,8 @@ export default function AdultSettingsPage() {
   const { activeHouse, leaveHouse, logout, profile, showToast, theme, setTheme, updateHouse } = useTaskTower()
   const [form, setForm] = useState({ name: '', towerHeight: 20, monthlyResetDay: 1 })
   const [saving, setSaving] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const [confirmLeave, setConfirmLeave] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -50,12 +53,16 @@ export default function AdultSettingsPage() {
   }
 
   const leave = async () => {
+    setLeaving(true)
     setError('')
     try {
       await leaveHouse(activeHouse.id)
+      setConfirmLeave(false)
       navigate('/menu')
     } catch (err) {
       setError(err.message || 'The household could not be left.')
+    } finally {
+      setLeaving(false)
     }
   }
 
@@ -84,10 +91,11 @@ export default function AdultSettingsPage() {
 
         <section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section>
         <div className="adult-owner-note"><ShieldCheck size={19} /><span><strong>{activeHouse.role === 'owner' ? 'Household owner' : 'Household member'}</strong><small>{activeHouse.role === 'owner' ? 'Household changes are saved for everyone.' : 'Only the owner can change shared household details.'}</small></span></div>
-        {activeHouse.role !== 'owner' && <button className="danger-button" onClick={leave}>Leave household</button>}
+        {activeHouse.role !== 'owner' && <button className="danger-button" onClick={() => setConfirmLeave(true)}>Leave household</button>}
         <button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button>
         <BottomNav />
       </section>
+      <ConfirmDialog open={confirmLeave} title="Leave this household?" message={`You will lose access to ${activeHouse.name} until you are invited again.`} confirmLabel="Leave household" busy={leaving} onConfirm={leave} onCancel={() => setConfirmLeave(false)} />
     </AppShell>
   )
 }

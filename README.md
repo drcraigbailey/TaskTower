@@ -37,7 +37,7 @@ android/        generated Capacitor Android project and assets
 This app does not include demo accounts or a local data fallback. Supabase must be configured before login, registration or household changes can be used.
 
 1. Create a Supabase project.
-2. Apply every migration in `supabase/migrations/` with `supabase db push`.
+2. Link the checkout once with `npx supabase link --project-ref YOUR_PROJECT_REF`, then apply every migration with `npx supabase db push`.
 3. Copy `.env.example` to `.env` and add the project URL and public anon key.
 4. In Supabase Auth, add your development and production redirect URLs.
 5. Restart the Vite development server after changing environment values.
@@ -47,7 +47,10 @@ Required client values:
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_KEY
+VITE_AUTH_REDIRECT_URL=http://localhost:5173/
 ```
+
+For local registration, add both `http://localhost:5173/**` and `http://127.0.0.1:5173/**` under Supabase **Authentication > URL Configuration > Redirect URLs**. Set the Site URL to `http://localhost:5173` while developing. Production and Android builds should set `VITE_AUTH_REDIRECT_URL` to the hosted HTTPS callback that is also listed in Supabase.
 
 Never place a Supabase service-role key or Firebase server credential in the app. The public anon key is expected in the client; Row Level Security is the data boundary.
 
