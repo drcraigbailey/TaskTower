@@ -1,0 +1,1 @@
+Validation trigger for final Dwellio icon, splash, household joining and manual progress-cycle checks.
