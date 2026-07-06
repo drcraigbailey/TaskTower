@@ -50,26 +50,17 @@ function StartupSplash() {
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        width: '100vw',
+        width: '100%',
+        minHeight: '100vh',
         height: '100dvh',
         overflow: 'hidden',
-        background: '#FBF9F4',
+        backgroundColor: '#FBF9F4',
+        backgroundImage: `url(${startupSplash})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
       }}
-    >
-      <img
-        src={startupSplash}
-        alt=""
-        aria-hidden="true"
-        style={{
-          display: 'block',
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          objectPosition: 'center',
-          userSelect: 'none',
-        }}
-      />
-    </div>
+    />
   )
 }
 
