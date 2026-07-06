@@ -7,15 +7,17 @@ const sourceDir = path.join(root, 'source-assets', 'branding')
 const assetsDir = path.join(root, 'assets')
 const appBrandingDir = path.join(root, 'src', 'assets', 'branding')
 const androidRes = path.join(root, 'android', 'app', 'src', 'main', 'res')
+const iconReference = path.join(sourceDir, 'dwellio-app-icon-reference.jpg')
+const splashReference = path.join(sourceDir, 'dwellio-splash-reference.jpg')
 const ivory = { r: 251, g: 249, b: 244, alpha: 1 }
 
 const iconCandidates = [
-  path.join(sourceDir, 'dwellio-app-icon-reference.jpg'),
+  iconReference,
   path.join(assetsDir, 'icon-only.png'),
 ]
 
 const splashCandidates = [
-  path.join(sourceDir, 'dwellio-splash-reference.jpg'),
+  splashReference,
   path.join(assetsDir, 'splash-portrait.png'),
   path.join(androidRes, 'drawable', 'splash.png'),
 ]
@@ -39,6 +41,7 @@ const readFirstValidImage = async (candidates, label) => {
 }
 
 await Promise.all([
+  ensureDir(sourceDir),
   ensureDir(assetsDir),
   ensureDir(appBrandingDir),
   ensureDir(path.join(androidRes, 'drawable')),
@@ -55,8 +58,6 @@ const iconBuffer = await sharp(iconInput)
   .png()
   .toBuffer()
 
-// Adaptive launchers apply their own circle/squircle mask. Keeping the approved
-// icon inside a generous safe area prevents the roof, list and tick being cut off.
 const adaptiveArtwork = await sharp(iconBuffer)
   .resize(760, 760, { fit: 'contain' })
   .png()
@@ -97,7 +98,12 @@ const squareSplashBuffer = await sharp({
   .png()
   .toBuffer()
 
+const repairedIconReference = await sharp(iconBuffer).jpeg({ quality: 95 }).toBuffer()
+const repairedSplashReference = await sharp(splashPortraitBuffer).jpeg({ quality: 95 }).toBuffer()
+
 await Promise.all([
+  fs.writeFile(iconReference, repairedIconReference),
+  fs.writeFile(splashReference, repairedSplashReference),
   fs.writeFile(path.join(assetsDir, 'icon-only.png'), iconBuffer),
   fs.writeFile(path.join(assetsDir, 'icon-foreground.png'), iconForegroundBuffer),
   fs.writeFile(path.join(assetsDir, 'icon-background.png'), iconBackgroundBuffer),
@@ -132,22 +138,10 @@ for (const density of Object.keys(legacySizes)) {
   await ensureDir(output)
 
   await Promise.all([
-    sharp(iconBuffer)
-      .resize(legacySizes[density], legacySizes[density])
-      .png()
-      .toFile(path.join(output, 'ic_launcher.png')),
-    sharp(iconBuffer)
-      .resize(legacySizes[density], legacySizes[density])
-      .png()
-      .toFile(path.join(output, 'ic_launcher_round.png')),
-    sharp(iconForegroundBuffer)
-      .resize(adaptiveSizes[density], adaptiveSizes[density])
-      .png()
-      .toFile(path.join(output, 'ic_launcher_foreground.png')),
-    sharp(iconBackgroundBuffer)
-      .resize(adaptiveSizes[density], adaptiveSizes[density])
-      .png()
-      .toFile(path.join(output, 'ic_launcher_background.png')),
+    sharp(iconBuffer).resize(legacySizes[density], legacySizes[density]).png().toFile(path.join(output, 'ic_launcher.png')),
+    sharp(iconBuffer).resize(legacySizes[density], legacySizes[density]).png().toFile(path.join(output, 'ic_launcher_round.png')),
+    sharp(iconForegroundBuffer).resize(adaptiveSizes[density], adaptiveSizes[density]).png().toFile(path.join(output, 'ic_launcher_foreground.png')),
+    sharp(iconBackgroundBuffer).resize(adaptiveSizes[density], adaptiveSizes[density]).png().toFile(path.join(output, 'ic_launcher_background.png')),
   ])
 }
 
