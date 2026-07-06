@@ -13,7 +13,7 @@ export async function createHouseRecord(name) {
 
 export async function joinHouseRecord(code) {
   const db = requireDatabase()
-  const cleanCode = code.trim().toUpperCase()
+  const cleanCode = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
   if (cleanCode.length < 4) throw new Error('Enter the full household invite code.')
   const { data, error } = await db.rpc('join_house', { p_code: cleanCode })
   if (error) throw error
@@ -32,8 +32,6 @@ export async function updateHouseRecord(houseId, changes, { includeImagePath = f
   const db = requireDatabase()
   const payload = {
     name: changes.name.trim(),
-    tower_height: Number(changes.towerHeight),
-    monthly_reset_day: Number(changes.monthlyResetDay),
   }
   if (includeImagePath) payload.image_path = changes.imagePath || null
   if (payload.name.length < 2) throw new Error('House name must be at least two characters.')
@@ -43,6 +41,15 @@ export async function updateHouseRecord(houseId, changes, { includeImagePath = f
     .eq('id', houseId)
     .select('*')
     .single()
+  if (error) throw error
+  return data
+}
+
+export async function resetHouseholdProgressRecord(houseId) {
+  const db = requireDatabase()
+  const { data, error } = await db.rpc('reset_household_progress', {
+    p_household_id: houseId,
+  })
   if (error) throw error
   return data
 }
