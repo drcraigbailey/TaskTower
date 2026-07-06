@@ -2,9 +2,6 @@ import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 import { supabase } from './supabase.js'
 
-const pushNotificationsDisabled =
-  import.meta.env.VITE_PUSH_NOTIFICATIONS_ENABLED === 'false'
-
 const openNotificationDestination = (notification = {}) => {
   const data = notification.data || {}
   const householdId = data.household_id || data.householdId
@@ -28,7 +25,7 @@ const openNotificationDestination = (notification = {}) => {
 // Supabase. Sending remains server-side so Firebase credentials never ship in
 // the Android bundle.
 export async function initialisePushNotifications(userId) {
-  if (pushNotificationsDisabled || !Capacitor.isNativePlatform() || !userId) {
+  if (!Capacitor.isNativePlatform() || !userId) {
     return () => {}
   }
 
