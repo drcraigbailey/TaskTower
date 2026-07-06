@@ -5,6 +5,29 @@ import { AppShell, PageIntro, ScreenHeader, ThemeToggle, UserGreeting } from '..
 import BrandLogo from '../components/BrandLogo.jsx'
 import { useTaskTower } from '../context/TaskTowerContext.jsx'
 
+const joinErrorMessage = (error) => {
+  const message = String(error?.message || '').trim()
+  const normalized = message.toLowerCase()
+
+  if (normalized.includes('not active') || normalized.includes('invalid invite') || normalized.includes('invite code was not found')) {
+    return 'That invite code is not active. Check the code with the household owner.'
+  }
+  if (normalized.includes('expired')) {
+    return 'That invite code has expired. Ask the household owner for a new one.'
+  }
+  if (normalized.includes('reached its limit') || normalized.includes('maximum of 10') || normalized.includes('household is full')) {
+    return 'That household cannot accept another member right now.'
+  }
+  if (normalized.includes('authentication required') || normalized.includes('jwt')) {
+    return 'Your sign-in session has expired. Sign in again, then retry the code.'
+  }
+  if (normalized.includes('network') || normalized.includes('fetch')) {
+    return 'Dwellio could not reach the server. Check your connection and try again.'
+  }
+
+  return message || 'We could not join that household. Check the code and try again.'
+}
+
 export function MainMenuPage() {
   const navigate = useNavigate()
   return (
@@ -53,7 +76,7 @@ function HouseFormPage({ mode }) {
       const house = creating ? await createHouse(value) : await joinHouse(value)
       navigate(`/house/${house.id}`)
     } catch (err) {
-      setError(err.message || 'We could not open that house just yet.')
+      setError(creating ? (err.message || 'We could not create that house just yet.') : joinErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -80,6 +103,9 @@ function HouseFormPage({ mode }) {
               placeholder={creating ? 'e.g. Sunshine Home' : 'e.g. SUNNY-12'}
               minLength={creating ? 2 : 4}
               required
+              autoCapitalize={creating ? 'sentences' : 'characters'}
+              autoCorrect="off"
+              spellCheck={creating}
             />
           </label>
           {error && <div className="inline-message inline-message--error">{error}</div>}
@@ -87,7 +113,7 @@ function HouseFormPage({ mode }) {
             {loading ? 'Just a moment…' : creating ? 'Create house' : 'Join house'}
           </button>
         </form>
-        <div className="friendly-tip"><Sparkles size={18} /><p>{creating ? 'A house invite code will be ready as soon as you create it.' : 'Codes ignore capital letters and spaces, so no need to wrestle with the keyboard.'}</p></div>
+        <div className="friendly-tip"><Sparkles size={18} /><p>{creating ? 'A house invite code will be ready as soon as you create it.' : 'Codes ignore capital letters, spaces and dashes, so no need to wrestle with the keyboard.'}</p></div>
       </section>
     </AppShell>
   )
