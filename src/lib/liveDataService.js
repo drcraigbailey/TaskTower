@@ -113,6 +113,7 @@ export async function loadHouses(userId) {
       picture: mediaUrls[row.image_path] || null,
       towerHeight: row.tower_height,
       monthlyResetDay: row.monthly_reset_day,
+      progressCycleId: row.progress_cycle_id || null,
       role: membership.role,
       joinedAt: membership.joined_at,
       joinCode: null,
@@ -125,12 +126,12 @@ export async function loadHouses(userId) {
 
 export async function loadHouseSnapshot(houseId, user, ownProfile) {
   const db = requireDatabase()
-  const monthStart = `${new Date().toISOString().slice(0, 7)}-01`
+  const fallbackMonthStart = `${new Date().toISOString().slice(0, 7)}-01`
   const results = await Promise.all([
     db.from('households').select('*').eq('id', houseId).maybeSingle(),
     db.from('household_members').select('user_id, role, joined_at').eq('household_id', houseId),
     db.from('chores').select('*').eq('household_id', houseId).eq('is_active', true).order('sort_order'),
-    db.from('monthly_game_state').select('user_id, points, floors_climbed, is_winner').eq('household_id', houseId).eq('month_start', monthStart),
+    db.from('monthly_game_state').select('*').eq('household_id', houseId).order('updated_at', { ascending: false }).limit(1000),
     db.from('household_join_codes').select('code').eq('household_id', houseId).eq('active', true).limit(1).maybeSingle(),
     db.from('notifications').select('*').eq('household_id', houseId).order('created_at', { ascending: false }).limit(40),
     db.from('household_shopping_items').select('*').eq('household_id', houseId).order('created_at', { ascending: false }).limit(100),
@@ -154,8 +155,14 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
     ...(profilesResult.data || []).map((item) => item.avatar_path),
   ])
 
+  const activeCycleId = houseResult.data.progress_cycle_id || null
+  const activeGameRows = (gameResult.data || []).filter((item) => (
+    activeCycleId
+      ? item.progress_cycle_id === activeCycleId
+      : item.month_start === fallbackMonthStart
+  ))
   const profileById = Object.fromEntries((profilesResult.data || []).map((item) => [item.user_id, item]))
-  const gameById = Object.fromEntries((gameResult.data || []).map((item) => [item.user_id, item]))
+  const gameById = Object.fromEntries(activeGameRows.map((item) => [item.user_id, item]))
   const members = (membersResult.data || []).map((item) => {
     const profileRow = profileById[item.user_id]
     const memberProfile = mapProfile(profileRow, item.user_id === user.id ? ownProfile.username : 'Housemate', mediaUrls[profileRow?.avatar_path] || null)
@@ -271,6 +278,7 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
       picture: mediaUrls[houseResult.data.image_path] || null,
       towerHeight: houseResult.data.tower_height,
       monthlyResetDay: houseResult.data.monthly_reset_day,
+      progressCycleId: activeCycleId,
       role: membersResult.data?.find((item) => item.user_id === user.id)?.role || 'member',
       joinCode: codeResult.data?.code || null,
       members,
