@@ -28,6 +28,23 @@ export async function leaveHouseRecord(houseId) {
   if (error) throw error
 }
 
+export async function removeHouseholdMemberRecord(houseId, userId) {
+  const db = requireDatabase()
+  if (!houseId || !userId) throw new Error('Choose a household member to remove.')
+  const { error } = await db.rpc('remove_household_member', {
+    p_household_id: houseId,
+    p_user_id: userId,
+  })
+  if (error) throw error
+}
+
+export async function deleteHouseholdRecord(houseId) {
+  const db = requireDatabase()
+  if (!houseId) throw new Error('Choose a household to delete.')
+  const { error } = await db.rpc('delete_household', { p_household_id: houseId })
+  if (error) throw error
+}
+
 export async function updateHouseRecord(houseId, changes, { includeImagePath = false } = {}) {
   const db = requireDatabase()
   const payload = {
