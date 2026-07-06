@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "assets:build": "node scripts/build-tasktower-assets.mjs",
     "assets:prepare-app-art": "node scripts/prepare-supplied-app-art.mjs",
-    "android:sync": "npm run build && cap sync android",
+    "branding:android": "node scripts/build-dwellio-android-branding.mjs",
+    "android:sync": "npm run branding:android && npm run build && cap sync android",
     "android:open": "cap open android",
     "android:build": "npm run android:sync && cd android && gradlew.bat assembleDebug"
   },
