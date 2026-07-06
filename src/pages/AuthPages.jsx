@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { CheckCircle2, Eye, EyeOff, Mail, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import BrandLogo from '../components/BrandLogo.jsx'
 import { AppShell, ThemeToggle } from '../components/AppShell.jsx'
 import { useTaskTower } from '../context/TaskTowerContext.jsx'
+import './AuthPages.css'
 
 function AuthLayout({ mode }) {
   const isRegister = mode === 'register'
@@ -86,24 +87,28 @@ function AuthLayout({ mode }) {
           )}
           <label className="field">
             <span>Email address</span>
-            <div className="field-control">
-              <Mail size={18} />
-              <input name="email" type="email" value={form.email} onChange={update} placeholder="you@example.com" required />
+            <div className="field-control auth-input-control">
+              <Mail size={20} aria-hidden="true" />
+              <input name="email" type="email" value={form.email} onChange={update} placeholder="you@example.com" autoComplete="email" required />
             </div>
           </label>
           <label className="field">
             <span>Password</span>
-            <div className="field-control">
-              <input name="password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={update} placeholder="At least 8 characters" minLength="8" required />
-              <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label="Show password">
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            <div className="field-control auth-input-control">
+              <LockKeyhole size={20} aria-hidden="true" />
+              <input name="password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={update} placeholder="At least 8 characters" minLength="8" autoComplete={isRegister ? 'new-password' : 'current-password'} required />
+              <button type="button" className="auth-password-toggle" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
           </label>
           {isRegister && (
             <label className="field">
               <span>Confirm password</span>
-              <input name="confirm" type={showPassword ? 'text' : 'password'} value={form.confirm} onChange={update} placeholder="One more time" required />
+              <div className="field-control auth-input-control">
+                <LockKeyhole size={20} aria-hidden="true" />
+                <input name="confirm" type={showPassword ? 'text' : 'password'} value={form.confirm} onChange={update} placeholder="One more time" autoComplete="new-password" required />
+              </div>
             </label>
           )}
           {!isSupabaseConfigured && <div className="inline-message inline-message--error">Live accounts are unavailable because this build has no Supabase environment values.</div>}
