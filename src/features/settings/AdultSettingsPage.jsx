@@ -14,6 +14,7 @@ import {
   saveNotificationPreferences,
   setNativeNotificationsEnabled,
 } from '../../lib/pushNotifications.js'
+import HouseholdOwnerControls from './HouseholdOwnerControls.jsx'
 
 const notificationRows = [
   ['messages', 'Household messages', 'New messages from housemates', MessageCircle],
@@ -195,6 +196,7 @@ export default function AdultSettingsPage() {
           </section>
         )}
         <section className="adult-panel"><div className="activity-title"><Users size={20} /><h2>Members</h2></div><div className="adult-member-row">{activeHouse.members.map((member) => <div key={member.id}><MemberAvatar name={member.username} image={member.profileImage} online /><strong>{member.username}</strong><small>{member.role}</small></div>)}</div></section>
+        <HouseholdOwnerControls />
         <section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section>
         <NotificationSettingsPanel showToast={showToast} />
         <div className="adult-owner-note"><ShieldCheck size={19} /><span><strong>{activeHouse.role === 'owner' ? 'Household owner' : 'Household member'}</strong><small>{activeHouse.role === 'owner' ? 'Household changes are saved for everyone.' : 'Only the owner can change shared household details.'}</small></span></div>
