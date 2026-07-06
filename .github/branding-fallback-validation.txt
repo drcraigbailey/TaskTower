@@ -1,0 +1,1 @@
+Validate fallback branding generation after repairing corrupt JPEG references.
