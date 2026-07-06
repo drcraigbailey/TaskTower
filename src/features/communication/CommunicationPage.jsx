@@ -5,6 +5,7 @@ import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
 import BottomNav from '../../components/BottomNav.jsx'
 import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import { useTaskTower } from '../../context/TaskTowerContext.jsx'
+import './CommunicationPage.css'
 
 const emptyNotice = { title: '', body: '', priority: 'normal', expiresInDays: '7' }
 
@@ -71,7 +72,7 @@ export default function CommunicationPage() {
         <div className="adult-tabs adult-tabs--two" role="tablist"><button className={tab === 'messages' ? 'active' : ''} onClick={() => setTab('messages')}>Messages<span>{messages.length}</span></button><button className={tab === 'notices' ? 'active' : ''} onClick={() => setTab('notices')}>Notices<span>{notices.length}</span></button></div>
         {error && <div className="inline-message inline-message--error">{error}</div>}
         {tab === 'notices' ? (
-          <>
+          <div className="communication-scroll-area">
             {showNoticeForm && <form className="form-stack editor-form" onSubmit={submitNotice}>
               <label className="field"><span>Title</span><input name="title" value={noticeForm.title} onChange={updateNoticeForm} placeholder="Bin collection changed" required /></label>
               <label className="field"><span>Notice</span><textarea name="body" value={noticeForm.body} onChange={updateNoticeForm} rows="3" placeholder="Share the details with everyone…" required /></label>
@@ -86,11 +87,13 @@ export default function CommunicationPage() {
               return <article className={`adult-notice-card adult-notice-card--${notice.priority}`} key={notice.id}><span><BellRing size={19} /></span><div><div><StatusBadge status={notice.priority === 'urgent' ? 'overdue' : notice.priority === 'important' ? 'attention' : 'current'} label={notice.priority} /><small>{notice.expiresAt ? `Expires in ${notice.expires}` : 'No expiry'}</small></div><h2>{notice.title}</h2><p>{notice.body}</p><footer><MemberAvatar name={notice.author} size="sm" /><span>Posted by {notice.author}</span>{canDelete && <button onClick={() => setPendingNoticeRemoval(notice)} aria-label="Delete notice"><Trash2 size={17} /></button>}</footer></div></article>
             })}</div>
             {notices.length === 0 && <div className="empty-list"><span>📌</span><h2>No notices</h2><p>Post an update when the household needs to know something.</p></div>}
-          </>
+          </div>
         ) : (
           <div className="messages-layout">
-            <div className="message-thread">{messages.map((message) => <article className={`message-row ${message.mine ? 'message-row--mine' : ''}`} key={message.id}>{!message.mine && <MemberAvatar name={message.author} size="sm" online />}<div><small>{message.author} · {message.time}</small><p>{message.body}</p>{message.mine && <span><CheckCircle2 size={12} /> Sent</span>}</div></article>)}</div>
-            {messages.length === 0 && <div className="empty-list"><span>💬</span><h2>No messages yet</h2><p>Start the household conversation below.</p></div>}
+            <div className="message-thread">
+              {messages.map((message) => <article className={`message-row ${message.mine ? 'message-row--mine' : ''}`} key={message.id}>{!message.mine && <MemberAvatar name={message.author} size="sm" online />}<div><small>{message.author} · {message.time}</small><p>{message.body}</p>{message.mine && <span><CheckCircle2 size={12} /> Sent</span>}</div></article>)}
+              {messages.length === 0 && <div className="empty-list message-empty"><span>💬</span><h2>No messages yet</h2><p>Start the household conversation below.</p></div>}
+            </div>
             <div className="message-composer"><input value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); send() } }} placeholder="Message the household" aria-label="Message the household" /><button onClick={send} disabled={busy || !text.trim()} aria-label="Send message"><Send size={18} /></button></div>
           </div>
         )}
