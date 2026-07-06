@@ -7,13 +7,15 @@ const sourceDir = path.join(root, 'source-assets', 'branding')
 const assetsDir = path.join(root, 'assets')
 const appBrandingDir = path.join(root, 'src', 'assets', 'branding')
 const androidRes = path.join(root, 'android', 'app', 'src', 'main', 'res')
+const iconSvg = path.join(sourceDir, 'dwellio-app-icon.svg')
 const iconReference = path.join(sourceDir, 'dwellio-app-icon-reference.jpg')
 const splashReference = path.join(sourceDir, 'dwellio-splash-reference.jpg')
 const ivory = { r: 251, g: 249, b: 244, alpha: 1 }
 
-// Prefer the checked-in PNG outputs. The JPEGs are retained as portable source
-// references, but older clones may contain truncated copies from an earlier commit.
+// The SVG is the master icon artwork. It contains only the house/checklist mark,
+// not the Dwellio wordmark, so Android masks never crop or shrink the text.
 const iconCandidates = [
+  iconSvg,
   path.join(assetsDir, 'icon-only.png'),
   iconReference,
 ]
@@ -32,8 +34,6 @@ const decodeFirstValidImage = async (candidates, label) => {
   for (const candidate of candidates) {
     try {
       const input = await fs.readFile(candidate)
-      // metadata() can succeed on a truncated JPEG. Force a complete decode so
-      // a damaged candidate is rejected here instead of exploding later.
       return await sharp(input).png().toBuffer()
     } catch (error) {
       failures.push(`${candidate}: ${error.message}`)
@@ -56,12 +56,9 @@ const [iconInput, splashInput] = await Promise.all([
   decodeFirstValidImage(splashCandidates, 'Dwellio splash screen'),
 ])
 
-const iconBuffer = await sharp(iconInput)
-  .resize(1024, 1024, { fit: 'cover' })
-  .png()
-  .toBuffer()
-
-const adaptiveArtwork = await sharp(iconBuffer)
+// Adaptive icons are masked by each launcher. Keeping the supplied symbol inside
+// a generous safe area prevents the roof and lower tiles being clipped.
+const adaptiveArtwork = await sharp(iconInput)
   .resize(760, 760, { fit: 'contain' })
   .png()
   .toBuffer()
@@ -76,6 +73,11 @@ const iconForegroundBuffer = await sharp({
 const iconBackgroundBuffer = await sharp({
   create: { width: 1024, height: 1024, channels: 4, background: ivory },
 })
+  .png()
+  .toBuffer()
+
+const legacyIconBuffer = await sharp(iconBackgroundBuffer)
+  .composite([{ input: adaptiveArtwork, left: 132, top: 132 }])
   .png()
   .toBuffer()
 
@@ -101,18 +103,13 @@ const squareSplashBuffer = await sharp({
   .png()
   .toBuffer()
 
-const repairedIconReference = await sharp(iconBuffer).jpeg({ quality: 95 }).toBuffer()
-const repairedSplashReference = await sharp(splashPortraitBuffer).jpeg({ quality: 95 }).toBuffer()
-
 await Promise.all([
-  fs.writeFile(iconReference, repairedIconReference),
-  fs.writeFile(splashReference, repairedSplashReference),
-  fs.writeFile(path.join(assetsDir, 'icon-only.png'), iconBuffer),
+  fs.writeFile(path.join(assetsDir, 'icon-only.png'), legacyIconBuffer),
   fs.writeFile(path.join(assetsDir, 'icon-foreground.png'), iconForegroundBuffer),
   fs.writeFile(path.join(assetsDir, 'icon-background.png'), iconBackgroundBuffer),
   fs.writeFile(
     path.join(assetsDir, 'play-store-icon-512.png'),
-    await sharp(iconBuffer).resize(512, 512).png().toBuffer(),
+    await sharp(legacyIconBuffer).resize(512, 512).png().toBuffer(),
   ),
   fs.writeFile(path.join(assetsDir, 'splash-portrait.png'), splashPortraitBuffer),
   fs.writeFile(path.join(assetsDir, 'splash.png'), squareSplashBuffer),
@@ -141,8 +138,8 @@ for (const density of Object.keys(legacySizes)) {
   await ensureDir(output)
 
   await Promise.all([
-    sharp(iconBuffer).resize(legacySizes[density], legacySizes[density]).png().toFile(path.join(output, 'ic_launcher.png')),
-    sharp(iconBuffer).resize(legacySizes[density], legacySizes[density]).png().toFile(path.join(output, 'ic_launcher_round.png')),
+    sharp(legacyIconBuffer).resize(legacySizes[density], legacySizes[density]).png().toFile(path.join(output, 'ic_launcher.png')),
+    sharp(legacyIconBuffer).resize(legacySizes[density], legacySizes[density]).png().toFile(path.join(output, 'ic_launcher_round.png')),
     sharp(iconForegroundBuffer).resize(adaptiveSizes[density], adaptiveSizes[density]).png().toFile(path.join(output, 'ic_launcher_foreground.png')),
     sharp(iconBackgroundBuffer).resize(adaptiveSizes[density], adaptiveSizes[density]).png().toFile(path.join(output, 'ic_launcher_background.png')),
   ])
@@ -160,4 +157,4 @@ await Promise.all([
   fs.writeFile(path.join(androidRes, 'mipmap-anydpi-v26', 'ic_launcher_round.xml'), adaptiveIcon),
 ])
 
-console.log('Generated the approved Dwellio app icon and illustrated splash screen.')
+console.log('Generated Dwellio Android icons from the icon-only SVG and refreshed splash assets.')
