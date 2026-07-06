@@ -4,8 +4,8 @@ import sharp from 'sharp'
 
 const root = path.resolve('.')
 const sourceDir = path.join(root, 'source-assets', 'branding')
-const iconReference = path.join(sourceDir, 'dwellio-app-icon-reference.png')
-const splashReference = path.join(sourceDir, 'dwellio-splash-reference.png')
+const iconReference = path.join(sourceDir, 'dwellio-app-icon-reference.jpg')
+const splashReference = path.join(sourceDir, 'dwellio-splash-reference.jpg')
 const assetsDir = path.join(root, 'assets')
 const appBrandingDir = path.join(root, 'src', 'assets', 'branding')
 const androidRes = path.join(root, 'android', 'app', 'src', 'main', 'res')
@@ -25,14 +25,17 @@ const iconBuffer = await sharp(iconReference)
   .png()
   .toBuffer()
 
+// Adaptive launchers apply their own circle/squircle mask. Keeping the approved
+// icon inside a generous safe area prevents the roof, list and tick being cut off.
+const adaptiveArtwork = await sharp(iconBuffer)
+  .resize(760, 760, { fit: 'contain' })
+  .png()
+  .toBuffer()
+
 const iconForegroundBuffer = await sharp({
   create: { width: 1024, height: 1024, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
 })
-  .composite([{
-    input: await sharp(iconBuffer).resize(920, 920, { fit: 'contain' }).png().toBuffer(),
-    left: 52,
-    top: 52,
-  }])
+  .composite([{ input: adaptiveArtwork, left: 132, top: 132 }])
   .png()
   .toBuffer()
 
@@ -130,4 +133,4 @@ await Promise.all([
   fs.writeFile(path.join(androidRes, 'mipmap-anydpi-v26', 'ic_launcher_round.xml'), adaptiveIcon),
 ])
 
-console.log('Generated the exact Dwellio icon and splash artwork from the approved reference PNGs.')
+console.log('Generated the approved Dwellio app icon and illustrated splash screen.')
