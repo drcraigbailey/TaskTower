@@ -24,7 +24,7 @@ export default function HouseholdDashboard() {
     <AppShell>
       <section className="mobile-screen adult-dashboard with-bottom-space">
         <header className="adult-topbar">
-          <button className="household-switcher" onClick={() => navigate('/menu')}><span>{activeHouse.name.slice(0, 1)}</span><div><small>Household</small><strong>{activeHouse.name}</strong></div><ChevronRight size={17} /></button>
+          <button className="household-switcher" onClick={() => navigate('/menu')}><span>{activeHouse.picture ? <img src={activeHouse.picture} alt="" /> : activeHouse.name.slice(0, 1)}</span><div><small>Household</small><strong>{activeHouse.name}</strong></div><ChevronRight size={17} /></button>
           <div><button className="icon-button icon-button--soft" onClick={() => navigate('/notifications')} aria-label="Notifications"><Bell size={19} />{unread > 0 && <span className="notification-dot">{unread}</span>}</button><ThemeToggle /></div>
         </header>
 
@@ -62,7 +62,7 @@ export default function HouseholdDashboard() {
         <section className="adult-panel">
           <AdultSectionHeader eyebrow="This month" title="Household contribution" action={<Users size={19} />} />
           <div className="adult-member-row">
-            {activeHouse.members.slice(0, 4).map((member) => <div key={member.id}><MemberAvatar name={member.username} online /><strong>{member.username}</strong><small>{member.points} points</small></div>)}
+            {activeHouse.members.slice(0, 4).map((member) => <div key={member.id}><MemberAvatar name={member.username} image={member.profileImage} online /><strong>{member.username}</strong><small>{member.points} points</small></div>)}
           </div>
         </section>
 

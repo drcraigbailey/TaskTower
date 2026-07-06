@@ -1,5 +1,5 @@
 import { Check, Package, Plus, Search, ShoppingBasket, Trash2, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AdultSectionHeader, EmptyState, StatusBadge } from '../../components/adult/AdultUi.jsx'
 import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
 import BottomNav from '../../components/BottomNav.jsx'
@@ -20,7 +20,15 @@ export default function ShoppingPage() {
   const [removing, setRemoving] = useState(false)
   const [pendingRemoval, setPendingRemoval] = useState(null)
   const [error, setError] = useState('')
+  const formRef = useRef(null)
   const visible = useMemo(() => shoppingItems.filter((item) => item.state === tab && item.name.toLowerCase().includes(query.toLowerCase())), [shoppingItems, query, tab])
+
+  useEffect(() => {
+    if (!showForm) return
+    const frame = window.requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    return () => window.cancelAnimationFrame(frame)
+  }, [showForm])
+
   if (!activeHouse) return null
 
   const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
@@ -72,14 +80,15 @@ export default function ShoppingPage() {
     <AppShell>
       <section className="mobile-screen adult-shopping with-bottom-space">
         <ScreenHeader title="Shopping" subtitle={activeHouse.name} actions={<button className="add-button" onClick={() => setShowForm((value) => !value)} aria-label="Add shopping item">{showForm ? <X size={20} /> : <Plus size={20} />}</button>} />
-        {showForm && <form className="form-stack editor-form" onSubmit={submit}>
+        {showForm && <form ref={formRef} className="form-stack editor-form shopping-item-form" onSubmit={submit}>
+          <div className="editor-form__heading"><span>New item</span><h2>Add to the household list</h2></div>
           <label className="field"><span>Item</span><input name="name" value={form.name} onChange={update} placeholder="Milk" required /></label>
           <label className="field"><span>Details</span><input name="detail" value={form.detail} onChange={update} placeholder="2 litres, semi-skimmed" /></label>
           <div className="form-grid">
             <label className="field"><span>Category</span><input name="category" value={form.category} onChange={update} placeholder="Groceries" /></label>
             <label className="field"><span>Status</span><select name="state" value={form.state} onChange={update}><option value="low">Running low</option><option value="out">Out</option><option value="list">Shopping list</option></select></label>
           </div>
-          <button className="primary-button" disabled={busy}>{busy ? 'Saving…' : 'Add item'}</button>
+          <button className="primary-button" disabled={busy}>{busy ? 'Saving…' : 'Add to household list'}</button>
         </form>}
         {error && <div className="inline-message inline-message--error">{error}</div>}
         <label className="adult-search"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shopping items" /></label>

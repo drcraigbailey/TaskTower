@@ -2,57 +2,80 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  font-family: "Nunito", "Arial Rounded MT Bold", ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #17232b;
-  background: #eef1ef;
+  font-family: Inter, "DM Sans", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #191b1a;
+  background: #f7f6f3;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --ink: #17232b;
-  --muted: #65717a;
-  --surface: #f8f9f7;
+  --ink: #191b1a;
+  --muted: #626762;
+  --surface: #f7f6f3;
   --surface-raised: #ffffff;
-  --surface-soft: #f0f3f1;
-  --line: #e0e5e2;
-  --purple: #227054;
-  --purple-deep: #15563f;
-  --purple-soft: #e4f1eb;
-  --pink: #a84e5c;
-  --pink-soft: #f8e9eb;
-  --peach: #d99b45;
-  --cream: #fff3dc;
-  --mint: #75a88d;
-  --blue: #4f7fa7;
-  --yellow: #d88b25;
-  --green: #39815f;
-  --red: #cf4b4f;
-  --shadow-sm: 0 4px 14px rgba(28, 45, 38, .06);
-  --shadow-md: 0 12px 30px rgba(28, 45, 38, .09);
-  --radius-sm: 16px;
-  --radius-md: 22px;
-  --radius-lg: 30px;
+  --surface-soft: #f1f0ec;
+  --line: #e3e2de;
+  --purple: #2f9e74;
+  --purple-deep: #1d6f53;
+  --purple-soft: #e3f5ee;
+  --pink: #d8554d;
+  --pink-soft: #fce7e5;
+  --peach: #e37b22;
+  --cream: #fff0d8;
+  --mint: #6f8c79;
+  --blue: #467fd0;
+  --yellow: #d98a22;
+  --green: #2f9e74;
+  --red: #d8554d;
+  --task-green: #2f9e74;
+  --task-green-soft: #e3f5ee;
+  --warning-amber: #d98a22;
+  --warning-amber-soft: #fff0d8;
+  --overdue-red: #d8554d;
+  --overdue-red-soft: #fce7e5;
+  --shopping-orange: #e37b22;
+  --shopping-orange-soft: #fff0e2;
+  --notice-purple: #8866c8;
+  --notice-purple-soft: #f0e9fa;
+  --message-blue: #467fd0;
+  --message-blue-soft: #e8f0fc;
+  --household-sage: #6f8c79;
+  --household-sage-soft: #eaf1ec;
+  --shadow-sm: 0 1px 2px rgba(23, 28, 25, .04), 0 8px 24px rgba(23, 28, 25, .06);
+  --shadow-md: 0 2px 4px rgba(23, 28, 25, .05), 0 18px 42px rgba(23, 28, 25, .08);
+  --radius-sm: 14px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
 }
 
 :root.dark {
-  color: #f5efff;
-  background: #141222;
-  --ink: #f5efff;
-  --muted: #aaa5bb;
-  --surface: #0d201f;
-  --surface-raised: #142b29;
-  --surface-soft: #1b3532;
-  --line: #2d4844;
-  --purple-soft: #21463d;
-  --pink-soft: #492b31;
-  --cream: #3a3325;
+  color: #f4f5f2;
+  background: #151918;
+  --ink: #f4f5f2;
+  --muted: #a8afaa;
+  --surface: #151918;
+  --surface-raised: #1d2321;
+  --surface-soft: #252c29;
+  --line: #343c39;
+  --purple: #67c59f;
+  --purple-deep: #82d5b3;
+  --purple-soft: #203f34;
+  --pink-soft: #472a29;
+  --cream: #44371f;
+  --task-green-soft: #203f34;
+  --warning-amber-soft: #44371f;
+  --overdue-red-soft: #472a29;
+  --shopping-orange-soft: #432e1f;
+  --notice-purple-soft: #352d46;
+  --message-blue-soft: #23344c;
+  --household-sage-soft: #293832;
   --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.18);
   --shadow-md: 0 18px 45px rgba(0, 0, 0, 0.3);
 }
 
 * { box-sizing: border-box; }
 html, body, #root { overflow-x: hidden; }
-html { min-width: 320px; min-height: 100%; background: #eef1ef; }
-body { margin: 0; min-width: 320px; min-height: 100vh; min-height: 100svh; background: #eef1ef; }
+html { min-width: 320px; min-height: 100%; background: var(--surface); }
+body { margin: 0; min-width: 320px; min-height: 100vh; min-height: 100svh; background: var(--surface); }
 button, input, textarea, select { font: inherit; }
 button { color: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -62,6 +85,11 @@ img { max-width: 100%; }
 h1, h2, h3, p { margin: 0; }
 a { color: var(--purple-deep); font-weight: 750; text-decoration: none; }
 #root { min-height: 100vh; min-height: 100svh; }
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--task-green) 34%, transparent);
+  outline-offset: 2px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }

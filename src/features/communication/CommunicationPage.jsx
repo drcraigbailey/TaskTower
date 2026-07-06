@@ -84,14 +84,14 @@ export default function CommunicationPage() {
             </form>}
             <div className="notice-list">{notices.map((notice) => {
               const canDelete = notice.authorId === user.id || activeHouse.role === 'owner'
-              return <article className={`adult-notice-card adult-notice-card--${notice.priority}`} key={notice.id}><span><BellRing size={19} /></span><div><div><StatusBadge status={notice.priority === 'urgent' ? 'overdue' : notice.priority === 'important' ? 'attention' : 'current'} label={notice.priority} /><small>{notice.expiresAt ? `Expires in ${notice.expires}` : 'No expiry'}</small></div><h2>{notice.title}</h2><p>{notice.body}</p><footer><MemberAvatar name={notice.author} size="sm" /><span>Posted by {notice.author}</span>{canDelete && <button onClick={() => setPendingNoticeRemoval(notice)} aria-label="Delete notice"><Trash2 size={17} /></button>}</footer></div></article>
+              return <article className={`adult-notice-card adult-notice-card--${notice.priority}`} key={notice.id}><span><BellRing size={19} /></span><div><div><StatusBadge status={notice.priority === 'urgent' ? 'overdue' : notice.priority === 'important' ? 'attention' : 'current'} label={notice.priority} /><small>{notice.expiresAt ? `Expires in ${notice.expires}` : 'No expiry'}</small></div><h2>{notice.title}</h2><p>{notice.body}</p><footer><MemberAvatar name={notice.author} image={notice.authorImage} size="sm" /><span>Posted by {notice.author}</span>{canDelete && <button onClick={() => setPendingNoticeRemoval(notice)} aria-label="Delete notice"><Trash2 size={17} /></button>}</footer></div></article>
             })}</div>
             {notices.length === 0 && <div className="empty-list"><span>📌</span><h2>No notices</h2><p>Post an update when the household needs to know something.</p></div>}
           </div>
         ) : (
           <div className="messages-layout">
             <div className="message-thread">
-              {messages.map((message) => <article className={`message-row ${message.mine ? 'message-row--mine' : ''}`} key={message.id}>{!message.mine && <MemberAvatar name={message.author} size="sm" online />}<div><small>{message.author} · {message.time}</small><p>{message.body}</p>{message.mine && <span><CheckCircle2 size={12} /> Sent</span>}</div></article>)}
+              {messages.map((message) => <article className={`message-row ${message.mine ? 'message-row--mine' : ''}`} key={message.id}>{!message.mine && <MemberAvatar name={message.author} image={message.authorImage} size="sm" online />}<div><small>{message.author} · {message.time}</small><p>{message.body}</p>{message.mine && <span><CheckCircle2 size={12} /> Sent</span>}</div></article>)}
               {messages.length === 0 && <div className="empty-list message-empty"><span>💬</span><h2>No messages yet</h2><p>Start the household conversation below.</p></div>}
             </div>
             <div className="message-composer"><input value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); send() } }} placeholder="Message the household" aria-label="Message the household" /><button onClick={send} disabled={busy || !text.trim()} aria-label="Send message"><Send size={18} /></button></div>

@@ -21,7 +21,7 @@ export default function HouseholdHubPage() {
         <div className="household-card-list">
           {houses.map((house) => (
             <button className="current-house-card" key={house.id} onClick={() => openHouse(house.id)}>
-              <span><Home size={23} /></span>
+              <span>{house.picture ? <img src={house.picture} alt="" /> : <Home size={23} />}</span>
               <div><small>{activeHouse?.id === house.id ? 'Current household' : 'Open household'}</small><strong>{house.name}</strong><p>{house.role === 'owner' ? 'Owner' : 'Member'} · Synced</p></div>
               <ArrowRight size={20} />
             </button>

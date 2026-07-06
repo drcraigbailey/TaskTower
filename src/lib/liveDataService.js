@@ -1,4 +1,5 @@
 import { defaultProfile } from '../data/defaults.js'
+import { signedMediaUrl, signedMediaUrls } from './mediaStorage.js'
 import { supabase } from './supabase.js'
 
 const frequencyLabel = {
@@ -36,8 +37,10 @@ const expiryLabel = (value) => {
   return `${days} day${days === 1 ? '' : 's'}`
 }
 
-export const mapProfile = (row, fallbackUsername = defaultProfile.username) => ({
+export const mapProfile = (row, fallbackUsername = defaultProfile.username, picture = null) => ({
   username: row?.username || fallbackUsername,
+  avatarPath: row?.avatar_path || null,
+  picture,
   avatar: {
     skin: row?.skin_tone || defaultProfile.avatar.skin,
     hair: row?.hair_color || defaultProfile.avatar.hair,
@@ -72,14 +75,14 @@ export async function loadProfile(user) {
   const fallbackUsername = user.user_metadata?.username || user.email?.split('@')[0] || defaultProfile.username
   const { data, error } = await db.from('player_profiles').select('*').eq('user_id', user.id).maybeSingle()
   if (error) throw error
-  if (data) return mapProfile(data, fallbackUsername)
+  if (data) return mapProfile(data, fallbackUsername, await signedMediaUrl(data.avatar_path))
   const { data: created, error: createError } = await db
     .from('player_profiles')
     .upsert({ user_id: user.id, username: fallbackUsername })
     .select()
     .single()
   if (createError) throw createError
-  return mapProfile(created, fallbackUsername)
+  return mapProfile(created, fallbackUsername, await signedMediaUrl(created.avatar_path))
 }
 
 export async function loadHouses(userId) {
@@ -94,9 +97,10 @@ export async function loadHouses(userId) {
   const ids = memberships.map((item) => item.household_id)
   const { data: rows, error } = await db
     .from('households')
-    .select('id, name, tower_height, monthly_reset_day')
+    .select('*')
     .in('id', ids)
   if (error) throw error
+  const mediaUrls = await signedMediaUrls((rows || []).map((row) => row.image_path))
   const rowById = Object.fromEntries((rows || []).map((row) => [row.id, row]))
   const memberById = Object.fromEntries(memberships.map((item) => [item.household_id, item]))
   return ids.map((id) => {
@@ -105,6 +109,8 @@ export async function loadHouses(userId) {
     return row ? {
       id: row.id,
       name: row.name,
+      imagePath: row.image_path || null,
+      picture: mediaUrls[row.image_path] || null,
       towerHeight: row.tower_height,
       monthlyResetDay: row.monthly_reset_day,
       role: membership.role,
@@ -121,7 +127,7 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
   const db = requireDatabase()
   const monthStart = `${new Date().toISOString().slice(0, 7)}-01`
   const results = await Promise.all([
-    db.from('households').select('id, name, tower_height, monthly_reset_day').eq('id', houseId).maybeSingle(),
+    db.from('households').select('*').eq('id', houseId).maybeSingle(),
     db.from('household_members').select('user_id, role, joined_at').eq('household_id', houseId),
     db.from('chores').select('*').eq('household_id', houseId).eq('is_active', true).order('sort_order'),
     db.from('monthly_game_state').select('user_id, points, floors_climbed, is_winner').eq('household_id', houseId).eq('month_start', monthStart),
@@ -143,10 +149,16 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
     : { data: [], error: null }
   if (profilesResult.error) throw profilesResult.error
 
+  const mediaUrls = await signedMediaUrls([
+    houseResult.data.image_path,
+    ...(profilesResult.data || []).map((item) => item.avatar_path),
+  ])
+
   const profileById = Object.fromEntries((profilesResult.data || []).map((item) => [item.user_id, item]))
   const gameById = Object.fromEntries((gameResult.data || []).map((item) => [item.user_id, item]))
   const members = (membersResult.data || []).map((item) => {
-    const memberProfile = mapProfile(profileById[item.user_id], item.user_id === user.id ? ownProfile.username : 'Housemate')
+    const profileRow = profileById[item.user_id]
+    const memberProfile = mapProfile(profileRow, item.user_id === user.id ? ownProfile.username : 'Housemate', mediaUrls[profileRow?.avatar_path] || null)
     const score = gameById[item.user_id] || {}
     return {
       id: item.user_id,
@@ -156,15 +168,18 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
       points: score.points || 0,
       isWinner: Boolean(score.is_winner),
       avatar: memberProfile.avatar,
+      profileImage: memberProfile.picture,
     }
   })
   const nameById = Object.fromEntries(members.map((item) => [item.id, item.username]))
+  const imageById = Object.fromEntries(members.map((item) => [item.id, item.profileImage]))
   const choreRows = choresResult.data || []
   const choreNameById = Object.fromEntries(choreRows.map((item) => [item.id, item.display_name]))
   const messages = [...(messagesResult.data || [])].reverse().map((item) => ({
     id: item.id,
     authorId: item.author_id,
     author: item.author_id === user.id ? 'You' : nameById[item.author_id] || 'Housemate',
+    authorImage: imageById[item.author_id] || null,
     body: item.body,
     time: relativeTime(item.created_at),
     createdAt: item.created_at,
@@ -176,6 +191,7 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
       id: item.id,
       authorId: item.author_id,
       author: item.author_id === user.id ? 'You' : nameById[item.author_id] || 'Housemate',
+      authorImage: imageById[item.author_id] || null,
       title: item.title,
       body: item.body,
       priority: item.priority,
@@ -205,6 +221,7 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
       id: `chore-${item.id}`,
       type: 'tasks',
       member: item.user_id === user.id ? 'You' : nameById[item.user_id] || 'Housemate',
+      memberImage: imageById[item.user_id] || null,
       action: item.completion_type === 'full' ? 'completed a full clean for' : 'completed',
       subject: choreNameById[item.chore_id] || 'a task',
       time: relativeTime(item.completed_at),
@@ -215,6 +232,7 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
       id: `shopping-${item.id}`,
       type: 'shopping',
       member: item.created_by === user.id ? 'You' : nameById[item.created_by] || 'Housemate',
+      memberImage: imageById[item.created_by] || null,
       action: item.purchased_at ? 'marked as purchased' : 'added to shopping',
       subject: item.name,
       time: relativeTime(item.purchased_at || item.created_at),
@@ -225,6 +243,7 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
       id: `notice-${item.id}`,
       type: 'notices',
       member: item.author_id === user.id ? 'You' : nameById[item.author_id] || 'Housemate',
+      memberImage: imageById[item.author_id] || null,
       action: 'posted a notice',
       subject: item.title,
       time: relativeTime(item.created_at),
@@ -235,6 +254,7 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
       id: `message-${item.id}`,
       type: 'messages',
       member: item.author_id === user.id ? 'You' : nameById[item.author_id] || 'Housemate',
+      memberImage: imageById[item.author_id] || null,
       action: 'sent a message',
       subject: item.body.length > 45 ? `${item.body.slice(0, 45)}…` : item.body,
       time: relativeTime(item.created_at),
@@ -247,6 +267,8 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
     house: {
       id: houseResult.data.id,
       name: houseResult.data.name,
+      imagePath: houseResult.data.image_path || null,
+      picture: mediaUrls[houseResult.data.image_path] || null,
       towerHeight: houseResult.data.tower_height,
       monthlyResetDay: houseResult.data.monthly_reset_day,
       role: membersResult.data?.find((item) => item.user_id === user.id)?.role || 'member',

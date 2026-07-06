@@ -13,7 +13,7 @@ export default function ActivityPage() {
         <ScreenHeader title="Household activity" subtitle={activeHouse.name} back={`/house/${activeHouse.id}`} />
         <section className="adult-panel">
           <div className="activity-title"><Activity size={20} /><h2>Recent updates</h2></div>
-          {activity.map((item) => <article className="activity-detail-row" key={item.id}><MemberAvatar name={item.member} size="sm" /><p><strong>{item.member}</strong> {item.action} <b>{item.subject}</b><small>{item.time}</small></p></article>)}
+          {activity.map((item) => <article className="activity-detail-row" key={item.id}><MemberAvatar name={item.member} image={item.memberImage} size="sm" /><p><strong>{item.member}</strong> {item.action} <b>{item.subject}</b><small>{item.time}</small></p></article>)}
           {activity.length === 0 && <div className="empty-list"><h2>No activity yet</h2><p>Updates will appear here as the household uses the app.</p></div>}
         </section>
         <BottomNav />

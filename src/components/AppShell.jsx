@@ -38,7 +38,7 @@ export function UserGreeting({ onNotifications }) {
   const unread = notifications.filter((item) => item.unread).length
   return (
     <div className="user-greeting">
-      <MemberAvatar name={profile.username} online />
+      <MemberAvatar name={profile.username} image={profile.picture} online />
       <div>
         <strong>Hi {profile.username}! <span aria-hidden="true">👋</span></strong>
         <p>What would you like to do?</p>

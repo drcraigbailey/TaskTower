@@ -28,19 +28,20 @@ export async function leaveHouseRecord(houseId) {
   if (error) throw error
 }
 
-export async function updateHouseRecord(houseId, changes) {
+export async function updateHouseRecord(houseId, changes, { includeImagePath = false } = {}) {
   const db = requireDatabase()
   const payload = {
     name: changes.name.trim(),
     tower_height: Number(changes.towerHeight),
     monthly_reset_day: Number(changes.monthlyResetDay),
   }
+  if (includeImagePath) payload.image_path = changes.imagePath || null
   if (payload.name.length < 2) throw new Error('House name must be at least two characters.')
   const { data, error } = await db
     .from('households')
     .update(payload)
     .eq('id', houseId)
-    .select('id, name, tower_height, monthly_reset_day')
+    .select('*')
     .single()
   if (error) throw error
   return data
@@ -142,10 +143,10 @@ export async function markNotificationsReadRecord(userId) {
   if (error) throw error
 }
 
-export async function saveProfileRecord(userId, profile) {
+export async function saveProfileRecord(userId, profile, { includeAvatarPath = false } = {}) {
   const db = requireDatabase()
   const cleanProfile = { ...profile, username: profile.username.trim() }
-  const { error } = await db.from('player_profiles').upsert({
+  const payload = {
     user_id: userId,
     username: cleanProfile.username,
     skin_tone: cleanProfile.avatar.skin,
@@ -154,7 +155,9 @@ export async function saveProfileRecord(userId, profile) {
     outfit_color: cleanProfile.avatar.outfit,
     accessory: cleanProfile.avatar.accessory,
     celebration: cleanProfile.avatar.celebration,
-  })
+  }
+  if (includeAvatarPath) payload.avatar_path = cleanProfile.avatarPath || null
+  const { error } = await db.from('player_profiles').upsert(payload)
   if (error) throw error
   return cleanProfile
 }

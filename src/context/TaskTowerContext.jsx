@@ -5,6 +5,7 @@ import { defaultProfile } from '../data/defaults.js'
 import { initialisePushNotifications } from '../lib/pushNotifications.js'
 import { isSupabaseConfigured, supabase } from '../lib/supabase.js'
 import { friendlyError, loadProfile, requireDatabase, saveTask } from '../lib/liveDataService.js'
+import { deleteMedia, uploadHouseholdImage, uploadProfileImage } from '../lib/mediaStorage.js'
 import {
   addShoppingRecord,
   completeTaskRecord,
@@ -331,20 +332,45 @@ export function TaskTowerProvider({ children }) {
   }
 
   const updateHouse = async (changes) => {
-    requireUser()
+    const signedInUser = requireUser()
 
     if (!household.activeHouse?.id) {
       throw new Error('Choose a household first.')
     }
 
-    const data = await updateHouseRecord(
-      household.activeHouse.id,
-      changes,
-    )
+    const pictureChanged = Boolean(changes.pictureFile) || Boolean(changes.removePicture)
+    const previousImagePath = household.activeHouse.imagePath || null
+    let uploadedImage = null
+    let nextImagePath = previousImagePath
+
+    if (changes.pictureFile) {
+      uploadedImage = await uploadHouseholdImage(household.activeHouse.id, signedInUser.id, changes.pictureFile)
+      nextImagePath = uploadedImage.path
+    } else if (changes.removePicture) {
+      nextImagePath = null
+    }
+
+    let data
+    try {
+      data = await updateHouseRecord(
+        household.activeHouse.id,
+        { ...changes, imagePath: nextImagePath },
+        { includeImagePath: pictureChanged },
+      )
+    } catch (error) {
+      if (uploadedImage?.path) await deleteMedia(uploadedImage.path).catch(() => {})
+      throw error
+    }
+
+    if (pictureChanged && previousImagePath && previousImagePath !== nextImagePath) {
+      await deleteMedia(previousImagePath).catch(() => {})
+    }
 
     const next = {
       ...household.activeHouse,
       name: data.name,
+      imagePath: pictureChanged ? nextImagePath : household.activeHouse.imagePath,
+      picture: pictureChanged ? uploadedImage?.url || null : household.activeHouse.picture,
       towerHeight: data.tower_height,
       monthlyResetDay: data.monthly_reset_day,
     }
@@ -386,6 +412,47 @@ export function TaskTowerProvider({ children }) {
     return saved
   }
 
+  const saveProfileSettings = async ({ username, pictureFile, removePicture = false }) => {
+    const signedInUser = requireUser()
+    const pictureChanged = Boolean(pictureFile) || Boolean(removePicture)
+    const previousAvatarPath = profile.avatarPath || null
+    let uploadedImage = null
+    let nextAvatarPath = previousAvatarPath
+
+    if (pictureFile) {
+      uploadedImage = await uploadProfileImage(signedInUser.id, pictureFile)
+      nextAvatarPath = uploadedImage.path
+    } else if (removePicture) {
+      nextAvatarPath = null
+    }
+
+    let saved
+    try {
+      saved = await saveProfileRecord(
+        signedInUser.id,
+        {
+          ...profile,
+          username,
+          avatarPath: nextAvatarPath,
+          picture: pictureChanged ? uploadedImage?.url || null : profile.picture,
+        },
+        { includeAvatarPath: pictureChanged },
+      )
+    } catch (error) {
+      if (uploadedImage?.path) await deleteMedia(uploadedImage.path).catch(() => {})
+      throw error
+    }
+
+    if (pictureChanged && previousAvatarPath && previousAvatarPath !== nextAvatarPath) {
+      await deleteMedia(previousAvatarPath).catch(() => {})
+    }
+
+    setProfileState(saved)
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(saved))
+    showToast('Profile saved.')
+    return saved
+  }
+
   const value = {
     ...household,
     user,
@@ -397,6 +464,7 @@ export function TaskTowerProvider({ children }) {
     isSupabaseConfigured,
     setTheme,
     setProfile,
+    saveProfileSettings,
     login,
     register,
     logout,
