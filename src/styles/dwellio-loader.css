@@ -1,12 +1,17 @@
 .route-loading {
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
   display: grid;
   place-items: center;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   padding: 0;
-  background: var(--surface) !important;
+  overflow: hidden;
+  isolation: isolate;
+  background: #f7f3ea !important;
   border: 0;
   box-shadow: none;
 }
@@ -24,8 +29,8 @@
 
 .dwellio-loading__mark {
   display: block;
-  width: var(--dwellio-loader-size, 148px);
-  height: var(--dwellio-loader-size, 148px);
+  width: min(var(--dwellio-loader-size, 180px), 56vw);
+  height: auto;
   margin: 0;
   padding: 0;
   border: 0;
@@ -34,4 +39,6 @@
   box-shadow: none;
   filter: none;
   object-fit: contain;
+  user-select: none;
+  pointer-events: none;
 }
