@@ -37,6 +37,13 @@ const expiryLabel = (value) => {
   return `${days} day${days === 1 ? '' : 's'}`
 }
 
+const notificationTone = (type) => {
+  if (type === 'chore_completed') return 'success'
+  if (['due_soon', 'overdue', 'full_clean', 'task_reminder'].includes(type)) return 'due'
+  if (type === 'shopping_broadcast') return 'shopping'
+  return 'house'
+}
+
 export const mapProfile = (row, fallbackUsername = defaultProfile.username, picture = null) => ({
   username: row?.username || fallbackUsername,
   avatarPath: row?.avatar_path || null,
@@ -217,9 +224,11 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
   }))
   const notifications = (notificationsResult.data || []).map((item) => ({
     id: item.id,
-    type: item.type === 'chore_completed' ? 'success' : item.type.includes('due') ? 'due' : 'house',
+    type: notificationTone(item.type),
+    rawType: item.type,
     title: item.title,
     body: item.body,
+    data: item.data || {},
     time: relativeTime(item.created_at),
     unread: !item.read_at,
   }))

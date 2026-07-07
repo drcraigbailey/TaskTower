@@ -1,4 +1,4 @@
-import dwellioLogo from '../assets/branding/dwellio/logo.svg'
+import dwellioLogo from '../assets/branding/dwellio/logo.png'
 
 export default function BrandLogo({ compact = false, light = false, tagline = false }) {
   return (

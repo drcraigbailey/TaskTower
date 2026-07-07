@@ -121,6 +121,16 @@ export async function purchaseShoppingRecord(id, userId) {
   if (error) throw error
 }
 
+export async function updateShoppingStatusRecord(id, state) {
+  const db = requireDatabase()
+  if (!['in_stock', 'low', 'out'].includes(state)) throw new Error('Choose a valid stock status.')
+  const { error } = await db
+    .from('household_shopping_items')
+    .update({ state, purchased_at: null, purchased_by: null })
+    .eq('id', id)
+  if (error) throw error
+}
+
 export async function deleteShoppingRecord(id) {
   const db = requireDatabase()
   const { error } = await db.from('household_shopping_items').delete().eq('id', id)
@@ -165,6 +175,44 @@ export async function markNotificationsReadRecord(userId) {
     .eq('user_id', userId)
     .is('read_at', null)
   if (error) throw error
+}
+
+export async function sendHouseholdNotificationRecord(houseId, notification) {
+  const db = requireDatabase()
+  if (!houseId) throw new Error('Choose a household first.')
+
+  const payload = {
+    p_household_id: houseId,
+    p_type: notification.type || 'system',
+    p_title: notification.title?.trim(),
+    p_body: notification.body?.trim() || '',
+    p_data: notification.data || {},
+    p_include_sender: notification.includeSender !== false,
+  }
+
+  if (!payload.p_title) throw new Error('Add a notification title.')
+
+  const { data, error } = await db.rpc('broadcast_household_notification', payload)
+  if (error) throw error
+
+  let pushDelivered = false
+  try {
+    const { error: pushError } = await db.functions.invoke('send-household-push', {
+      body: {
+        householdId: houseId,
+        type: payload.p_type,
+        title: payload.p_title,
+        body: payload.p_body,
+        data: payload.p_data,
+      },
+    })
+    if (pushError) throw pushError
+    pushDelivered = true
+  } catch (error) {
+    console.warn('Dwellio push fan-out is not available yet', error)
+  }
+
+  return { memberCount: data || 0, pushDelivered }
 }
 
 export async function saveProfileRecord(userId, profile, { includeAvatarPath = false } = {}) {

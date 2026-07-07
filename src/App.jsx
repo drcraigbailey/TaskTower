@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 import './App.css'
 import './styles/dwellio-loader.css'
 import orbitLoader from './assets/branding/dwellio-orbit-loader.svg'
-import startupSplash from '../source-assets/branding/dwellio-splash-reference.jpg'
+import startupSplash from '../source-assets/branding/dwellio-splash-reference.png'
 import { useTaskTower } from './context/TaskTowerContext.jsx'
 import { LoginPage, RegisterPage } from './pages/AuthPages.jsx'
 import { ChoreDashboardPage, ChoreDetailsPage, ChoreEditorPage } from './pages/ChorePages.jsx'

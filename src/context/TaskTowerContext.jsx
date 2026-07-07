@@ -20,7 +20,9 @@ import {
   purchaseShoppingRecord,
   reorderTaskRecords,
   saveProfileRecord,
+  sendHouseholdNotificationRecord,
   sendMessageRecord,
+  updateShoppingStatusRecord,
   updateHouseRecord,
 } from '../lib/liveMutations.js'
 import useLiveHouseholds from './useLiveHouseholds.js'
@@ -159,6 +161,18 @@ export function TaskTowerProvider({ children }) {
 
     return () => cleanup()
   }, [user?.id])
+
+  useEffect(() => {
+    const showForegroundPush = (event) => {
+      const notification = event.detail || {}
+      const title = notification.title || notification.data?.title || 'Dwellio'
+      const body = notification.body || notification.data?.body || 'New household update'
+      showToast(`${title}: ${body}`, 'neutral')
+    }
+
+    window.addEventListener('dwellio:push-received', showForegroundPush)
+    return () => window.removeEventListener('dwellio:push-received', showForegroundPush)
+  }, [showToast])
 
   const login = async ({ email, password }) => {
     setLoading(true)
@@ -505,6 +519,14 @@ export function TaskTowerProvider({ children }) {
         requireUser().id,
       ),
 
+    updateShoppingItemStatus: (id, state) => {
+      requireUser()
+      return updateShoppingStatusRecord(
+        id,
+        state,
+      )
+    },
+
     deleteShoppingItem: deleteShoppingRecord,
 
     sendMessage: (body) =>
@@ -527,6 +549,14 @@ export function TaskTowerProvider({ children }) {
       markNotificationsReadRecord(
         requireUser().id,
       ),
+
+    sendHouseholdNotification: (notification) => {
+      requireUser()
+      return sendHouseholdNotificationRecord(
+        household.activeHouse?.id,
+        notification,
+      )
+    },
 
     showToast,
     haptic,

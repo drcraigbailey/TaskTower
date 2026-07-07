@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Bath, Check, ChevronRight, CircleAlert, CookingPot, Home, Plus, RotateCcw, Save, Sofa, Sparkles, Trash2, WashingMachine } from 'lucide-react'
+import { ArrowDown, ArrowUp, Bath, BellRing, Check, ChevronRight, CircleAlert, CookingPot, Home, Plus, RotateCcw, Save, Sofa, Sparkles, Trash2, WashingMachine } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import BottomNav from '../components/BottomNav.jsx'
@@ -28,12 +28,14 @@ function ChoreCard({ chore, onOpen, onMove, first, last }) {
 
 export function ChoreDashboardPage() {
   const navigate = useNavigate()
-  const { activeHouse, chores, reorderTask: reorderChore } = useTaskTower()
+  const { activeHouse, chores, reorderTask: reorderChore, sendHouseholdNotification, showToast } = useTaskTower()
   const initialFilter = new URLSearchParams(window.location.hash.split('?')[1] || '').get('status') || 'all'
   const [filter, setFilter] = useState(initialFilter)
   const [error, setError] = useState('')
+  const [reminding, setReminding] = useState(false)
   if (!activeHouse) return null
   const filtered = chores.filter((chore) => filter === 'all' || chore.status === filter)
+  const pending = chores.filter((chore) => chore.status === 'due' || chore.status === 'overdue')
 
   const move = async (id, direction) => {
     setError('')
@@ -44,6 +46,31 @@ export function ChoreDashboardPage() {
     }
   }
 
+  const remindAll = async () => {
+    if (reminding || pending.length === 0) return
+    setReminding(true)
+    setError('')
+    try {
+      const names = pending.map((item) => item.name)
+      const result = await sendHouseholdNotification({
+        type: 'task_reminder',
+        title: 'Tasks need attention',
+        body: `${names.slice(0, 5).join(', ')}${names.length > 5 ? ` and ${names.length - 5} more` : ''}`,
+        data: {
+          type: 'task_reminder',
+          destination: `/house/${activeHouse.id}/chores`,
+          task_count: pending.length,
+          chore_ids: pending.map((item) => item.id),
+        },
+      })
+      showToast(`Reminder sent to ${result.memberCount} member${result.memberCount === 1 ? '' : 's'}.`)
+    } catch (err) {
+      setError(err.message || 'Task reminders could not be sent.')
+    } finally {
+      setReminding(false)
+    }
+  }
+
   return (
     <AppShell>
       <section className="mobile-screen chores-screen with-bottom-space">
@@ -51,9 +78,13 @@ export function ChoreDashboardPage() {
           title="Tasks"
           subtitle={activeHouse.name}
           back={`/house/${activeHouse.id}`}
-          actions={<button className="add-button" onClick={() => navigate(`/house/${activeHouse.id}/chores/new`)}><Plus size={20} /></button>}
+          actions={<button className="add-button" onClick={() => navigate(`/house/${activeHouse.id}/chores/new`)} aria-label="Add task"><Plus size={20} /></button>}
         />
         {error && <div className="inline-message inline-message--error">{error}</div>}
+        <section className="task-reminder-card">
+          <div><small>Task reminders</small><strong>{pending.length} pending task{pending.length === 1 ? '' : 's'}</strong></div>
+          <button type="button" className="secondary-button" onClick={remindAll} disabled={reminding || pending.length === 0}><BellRing size={17} />{reminding ? 'Sending...' : 'Remind all'}</button>
+        </section>
         <div className="segmented-control">
           {['all', 'due', 'overdue', 'done'].map((item) => (
             <button className={filter === item ? 'active' : ''} onClick={() => setFilter(item)} key={item}>
@@ -177,10 +208,11 @@ export function ChoreEditorPage() {
 export function ChoreDetailsPage() {
   const navigate = useNavigate()
   const { houseId, choreId } = useParams()
-  const { chores, completeTask: completeChore, dataLoading } = useTaskTower()
+  const { chores, completeTask: completeChore, dataLoading, sendHouseholdNotification, showToast } = useTaskTower()
   const chore = chores.find((item) => item.id === choreId)
   const [celebrating, setCelebrating] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [reminding, setReminding] = useState(false)
   const [error, setError] = useState('')
 
   const progress = useMemo(() => chore ? Math.min(100, (chore.quickCount / chore.fullCleanThreshold) * 100) : 0, [chore])
@@ -203,6 +235,29 @@ export function ChoreDetailsPage() {
     }
   }
 
+  const sendReminder = async () => {
+    if (reminding) return
+    setReminding(true)
+    setError('')
+    try {
+      const result = await sendHouseholdNotification({
+        type: 'task_reminder',
+        title: `Reminder: ${chore.name}`,
+        body: `${chore.dueLabel} in ${chore.category}.`,
+        data: {
+          type: 'task_reminder',
+          destination: `/house/${houseId}/chores/${chore.id}`,
+          chore_id: chore.id,
+        },
+      })
+      showToast(`Reminder sent to ${result.memberCount} member${result.memberCount === 1 ? '' : 's'}.`)
+    } catch (err) {
+      setError(err.message || 'The reminder could not be sent.')
+    } finally {
+      setReminding(false)
+    }
+  }
+
   return (
     <AppShell>
       <section className={`mobile-screen chore-detail-screen ${celebrating ? 'is-celebrating' : ''}`}>
@@ -216,6 +271,7 @@ export function ChoreDetailsPage() {
         <div className="completion-buttons">
           <button className="complete-button complete-button--quick" onClick={() => complete('quick')} disabled={busy}><Check size={21} />Quick clean completed</button>
           <button className="complete-button complete-button--full" onClick={() => complete('full')} disabled={busy}><Sparkles size={21} />Full clean completed</button>
+          <button className="complete-button complete-button--reminder" onClick={sendReminder} disabled={reminding}><BellRing size={21} />{reminding ? 'Sending reminder...' : 'Send reminder'}</button>
         </div>
         <dl className="detail-list">
           <div><dt>Description</dt><dd>{chore.description || 'No extra notes.'}</dd></div>

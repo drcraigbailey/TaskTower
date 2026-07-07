@@ -9,10 +9,10 @@
 
   <style>
     :root {
-      --dwellio-ink: #171A18;
-      --dwellio-teal: #2F9E74;
-      --dwellio-teal-mid: #86CDB4;
-      --dwellio-teal-soft: #DDF3EB;
+      --dwellio-ink: #283440;
+      --dwellio-teal: #44A898;
+      --dwellio-teal-mid: #48B0A0;
+      --dwellio-teal-soft: #DCEFEB;
     }
 
     .dwellio-mark {

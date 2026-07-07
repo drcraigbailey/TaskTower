@@ -55,16 +55,16 @@ export default function HouseholdDashboard() {
           <button className="adult-summary-card" onClick={() => navigate(`/house/${id}/messages`)}><Megaphone size={20} /><span><small>Messages</small><strong>{messages.length} recent</strong><em>{notices.length} notice{notices.length === 1 ? '' : 's'}</em></span></button>
         </section>
 
-        {urgentNotice && <section className={`adult-notice adult-notice--${urgentNotice.priority === 'urgent' ? 'urgent' : 'important'}`}>
-          <span><CircleAlert size={19} /></span><div><small>{urgentNotice.priority === 'urgent' ? 'Urgent notice' : 'Household notice'}</small><strong>{urgentNotice.title}</strong><p>{urgentNotice.body}</p></div><button onClick={() => navigate(`/house/${id}/messages?tab=notices`)}><ChevronRight size={19} /></button>
-        </section>}
+        {urgentNotice && <button type="button" className={`adult-notice adult-clickable-banner adult-notice--${urgentNotice.priority === 'urgent' ? 'urgent' : 'important'}`} onClick={() => navigate(`/house/${id}/messages?tab=notices`)}>
+          <span><CircleAlert size={19} /></span><div><small>{urgentNotice.priority === 'urgent' ? 'Urgent notice' : 'Household notice'}</small><strong>{urgentNotice.title}</strong><p>{urgentNotice.body}</p></div><ChevronRight size={19} />
+        </button>}
 
-        <section className="adult-panel">
+        <button type="button" className="adult-panel adult-clickable-panel" onClick={() => navigate(`/house/${id}/activity`)}>
           <AdultSectionHeader eyebrow="This month" title="Household contribution" action={<Users size={19} />} />
           <div className="adult-member-row">
             {activeHouse.members.slice(0, 4).map((member) => <div key={member.id}><MemberAvatar name={member.username} image={member.profileImage} online /><strong>{member.username}</strong><small>{member.points} points</small></div>)}
           </div>
-        </section>
+        </button>
 
         <section className="adult-panel adult-activity-preview">
           <AdultSectionHeader eyebrow="Recently" title="Household activity" action={<button className="adult-text-action" onClick={() => navigate(`/house/${id}/activity`)}>View all</button>} />

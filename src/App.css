@@ -604,7 +604,7 @@
 }
 .brand-logo--compact .brand-logo__tagline { margin-top: -7px; font-size: 6px; }
 .brand-logo--light .brand-logo__image,
-.dark .brand-logo:not(.brand-logo--light) .brand-logo__image { filter: brightness(0) invert(1); }
+.dark .brand-logo:not(.brand-logo--light) .brand-logo__image { filter: none; }
 .brand-logo--light .brand-logo__tagline { color: rgba(255,255,255,.78); }
 
 /* Concept 8 — Household Timeline visual system */
@@ -871,7 +871,7 @@
 }
 
 .auth-brand-panel .brand-logo--light .brand-logo__image { filter: none; }
-.dark .auth-brand-panel .brand-logo--light .brand-logo__image { filter: brightness(0) invert(1); }
+.dark .auth-brand-panel .brand-logo--light .brand-logo__image { filter: none; }
 .auth-brand-panel .brand-logo--light .brand-logo__tagline { color: var(--muted); }
 .auth-brand-panel h2 { margin-top: 42px; font-size: clamp(28px, 4vw, 42px); font-weight: 720; letter-spacing: -.04em; }
 .auth-brand-panel p { max-width: 390px; margin-top: 13px; color: var(--muted); font-size: 16px; line-height: 1.6; }
@@ -950,6 +950,12 @@
 }
 
 .adult-panel { margin-bottom: 18px; padding: 18px; }
+.adult-clickable-panel {
+  width: 100%;
+  display: block;
+  color: inherit;
+  text-align: left;
+}
 .adult-section-heading { margin-bottom: 14px; }
 .adult-section-heading > div > span {
   color: var(--muted);
@@ -991,15 +997,38 @@
 .adult-summary-card small { font-size: 11px; }
 .adult-summary-card strong { font-size: 14px; line-height: 1.35; }
 .adult-summary-card em { font-size: 11px; }
+.attention-overview button,
+.adult-summary-card,
+.adult-clickable-banner,
+.adult-clickable-panel {
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+.attention-overview button:hover,
+.adult-summary-card:hover,
+.adult-clickable-banner:hover,
+.adult-clickable-panel:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--task-green) 32%, var(--line));
+}
+.attention-overview button:active,
+.adult-summary-card:active,
+.adult-clickable-banner:active,
+.adult-clickable-panel:active {
+  transform: translateY(1px) scale(.99);
+}
 
 .adult-notice {
   margin-bottom: 18px;
   padding: 16px;
   grid-template-columns: 40px 1fr 36px;
+  width: 100%;
   border-color: color-mix(in srgb, var(--notice-purple) 24%, var(--line));
   border-radius: 18px;
+  color: inherit;
+  text-align: left;
   background: var(--notice-purple-soft);
 }
+.adult-clickable-banner > svg { align-self: center; color: var(--muted); }
 .adult-notice > span { width: 38px; height: 38px; color: var(--notice-purple); background: color-mix(in srgb, var(--notice-purple) 12%, var(--surface-raised)); }
 .adult-notice small { color: var(--notice-purple); font-size: 10px; }
 .adult-notice strong { font-size: 14px; }
@@ -1092,6 +1121,27 @@
 .chore-card--overdue .chore-progress span { background: var(--overdue-red); }
 .reorder-buttons { gap: 2px; }
 .reorder-buttons button { width: 38px; height: 38px; border-radius: 11px; }
+.task-reminder-card {
+  margin-bottom: 14px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+}
+.task-reminder-card div { display: grid; gap: 3px; }
+.task-reminder-card small { color: var(--muted); font-size: 10px; }
+.task-reminder-card strong { font-size: 13px; }
+.task-reminder-card .secondary-button {
+  width: auto;
+  min-height: 42px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
 
 .editor-form {
   padding: 20px;
@@ -1117,6 +1167,7 @@
 .complete-button { min-height: 52px; border-radius: 14px; font-size: 13px; }
 .complete-button--quick { background: var(--task-green); }
 .complete-button--full { background: #18211f; }
+.complete-button--reminder { color: #18342c; background: var(--warning-amber-soft); }
 .detail-list { margin-top: 18px; border-radius: 18px; background: var(--surface-raised); }
 .detail-list > div { padding: 15px 16px; }
 .detail-list dt { font-size: 12px; }
@@ -1135,7 +1186,60 @@
 .shopping-item-icon { width: 40px; height: 40px; color: var(--shopping-orange); background: var(--shopping-orange-soft); }
 .shopping-row strong { font-size: 14px; }
 .shopping-row small { font-size: 11px; }
+.shopping-row > .shopping-row__main {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.shopping-row > .shopping-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.shopping-broadcast-card {
+  margin-bottom: 14px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+}
+.shopping-broadcast-card div { display: grid; gap: 3px; }
+.shopping-broadcast-card small { color: var(--muted); font-size: 10px; }
+.shopping-broadcast-card strong { font-size: 13px; }
+.shopping-broadcast-card .secondary-button {
+  width: auto;
+  min-height: 42px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+.stock-state-control {
+  margin-top: 8px;
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.stock-state-control button {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: 10px;
+  font-weight: 650;
+}
+.stock-state-control button.active {
+  color: #fff;
+  border-color: #18211f;
+  background: #18211f;
+}
 .purchase-button { width: 44px; height: 44px; color: var(--task-green); background: var(--task-green-soft); }
+.purchase-button--danger { color: var(--overdue-red); background: var(--overdue-red-soft); border-color: transparent; }
 .shopping-add { margin-top: 14px; }
 .shopping-item-form { scroll-margin-top: 18px; }
 .editor-form__heading { display: grid; gap: 4px; padding-bottom: 2px; }

@@ -93,7 +93,18 @@ const openNotificationDestination = (notification = {}) => {
   }
 
   if (householdId) {
-    const tab = data.type === 'notice' || data.type === 'household_notice' ? '?tab=notices' : ''
+    const type = data.type || data.notification_type
+    if (type === 'shopping' || type === 'shopping_broadcast') {
+      window.location.hash = `/house/${householdId}/shopping`
+      return
+    }
+    if (type === 'task' || type === 'task_reminder') {
+      window.location.hash = data.chore_id
+        ? `/house/${householdId}/chores/${data.chore_id}`
+        : `/house/${householdId}/chores`
+      return
+    }
+    const tab = type === 'notice' || type === 'household_notice' ? '?tab=notices' : ''
     window.location.hash = `/house/${householdId}/messages${tab}`
     return
   }
