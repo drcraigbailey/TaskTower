@@ -106,7 +106,7 @@ export async function addShoppingRecord(houseId, userId, item) {
     name: item.name.trim(),
     detail: item.detail?.trim() || '',
     category: item.category?.trim() || 'General',
-    state: item.state || 'list',
+    state: item.state || 'list_low',
     created_by: userId,
   })
   if (error) throw error
@@ -123,7 +123,7 @@ export async function purchaseShoppingRecord(id, userId) {
 
 export async function updateShoppingStatusRecord(id, state) {
   const db = requireDatabase()
-  if (!['in_stock', 'low', 'out'].includes(state)) throw new Error('Choose a valid stock status.')
+  if (!['in_stock', 'low', 'out', 'list_low', 'list_out'].includes(state)) throw new Error('Choose a valid shopping status.')
   const { error } = await db
     .from('household_shopping_items')
     .update({ state, purchased_at: null, purchased_by: null })
