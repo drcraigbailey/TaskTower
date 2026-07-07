@@ -3,7 +3,6 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 import './App.css'
 import './styles/dwellio-loader.css'
 import orbitLoader from './assets/branding/dwellio-orbit-loader.svg'
-import startupSplash from '../source-assets/branding/dwellio-splash-reference.png'
 import { useTaskTower } from './context/TaskTowerContext.jsx'
 import { LoginPage, RegisterPage } from './pages/AuthPages.jsx'
 import { ChoreDashboardPage, ChoreDetailsPage, ChoreEditorPage } from './pages/ChorePages.jsx'
@@ -17,9 +16,9 @@ import HouseholdHubPage from './features/households/HouseholdHubPage.jsx'
 import ActivityPage from './features/activity/ActivityPage.jsx'
 
 const ROUTE_TRANSITION_MS = 420
-const STARTUP_SPLASH_MS = 1450
+const STARTUP_LOADER_MS = 1450
 
-function LoadingContent({ size = 148 }) {
+function LoadingContent({ size = 180 }) {
   return (
     <div className="dwellio-loading__content">
       <img
@@ -33,34 +32,11 @@ function LoadingContent({ size = 148 }) {
   )
 }
 
-function RouteLoading({ label = 'Loading Dwellio', size = 148 }) {
+function RouteLoading({ label = 'Loading Dwellio', size = 180 }) {
   return (
     <div className="route-loading" role="status" aria-live="polite" aria-label={label}>
       <LoadingContent size={size} />
     </div>
-  )
-}
-
-function StartupSplash() {
-  return (
-    <div
-      role="img"
-      aria-label="Dwellio. A cleaner home. A happier home."
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        width: '100%',
-        minHeight: '100vh',
-        height: '100dvh',
-        overflow: 'hidden',
-        backgroundColor: '#FBF9F4',
-        backgroundImage: `url(${startupSplash})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    />
   )
 }
 
@@ -134,10 +110,10 @@ function App() {
   const location = useLocation()
   const [displayedLocation, setDisplayedLocation] = useState(location)
   const [transitioning, setTransitioning] = useState(false)
-  const [showStartupSplash, setShowStartupSplash] = useState(true)
+  const [showStartupLoader, setShowStartupLoader] = useState(true)
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowStartupSplash(false), STARTUP_SPLASH_MS)
+    const timer = window.setTimeout(() => setShowStartupLoader(false), STARTUP_LOADER_MS)
     return () => window.clearTimeout(timer)
   }, [])
 
@@ -153,8 +129,8 @@ function App() {
     return () => window.clearTimeout(timer)
   }, [displayedLocation.key, location])
 
-  if (showStartupSplash) return <StartupSplash />
-  if (transitioning) return <RouteLoading label="Loading page" size={112} />
+  if (showStartupLoader) return <RouteLoading label="Loading Dwellio" />
+  if (transitioning) return <RouteLoading label="Loading page" />
   return <AppRoutes location={displayedLocation} />
 }
 
