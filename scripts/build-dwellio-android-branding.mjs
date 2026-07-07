@@ -12,18 +12,18 @@ const iconReference = path.join(sourceDir, 'dwellio-app-icon-reference.jpg')
 const splashReference = path.join(sourceDir, 'dwellio-splash-reference.jpg')
 const ivory = { r: 251, g: 249, b: 244, alpha: 1 }
 
-// The SVG is the master icon artwork. It contains only the house/checklist mark,
-// not the Dwellio wordmark, so Android masks never crop or shrink the text.
 const iconCandidates = [
   iconSvg,
-  path.join(assetsDir, 'icon-only.png'),
   iconReference,
+  path.join(assetsDir, 'icon-only.png'),
 ]
 
+// Always prefer the master splash artwork. Generated outputs must never become
+// their own source, otherwise a bad or partial image is repeatedly recycled.
 const splashCandidates = [
+  splashReference,
   path.join(assetsDir, 'splash-portrait.png'),
   path.join(androidRes, 'drawable', 'splash.png'),
-  splashReference,
 ]
 
 const ensureDir = (dir) => fs.mkdir(dir, { recursive: true })
@@ -56,8 +56,6 @@ const [iconInput, splashInput] = await Promise.all([
   decodeFirstValidImage(splashCandidates, 'Dwellio splash screen'),
 ])
 
-// Adaptive icons are masked by each launcher. Keeping the supplied symbol inside
-// a generous safe area prevents the roof and lower tiles being clipped.
 const adaptiveArtwork = await sharp(iconInput)
   .resize(760, 760, { fit: 'contain' })
   .png()
@@ -157,4 +155,4 @@ await Promise.all([
   fs.writeFile(path.join(androidRes, 'mipmap-anydpi-v26', 'ic_launcher_round.xml'), adaptiveIcon),
 ])
 
-console.log('Generated Dwellio Android icons from the icon-only SVG and refreshed splash assets.')
+console.log('Generated Dwellio Android icons and splash assets from the master branding artwork.')
