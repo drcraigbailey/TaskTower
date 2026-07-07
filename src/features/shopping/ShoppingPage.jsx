@@ -8,7 +8,12 @@ import { useTaskTower } from '../../context/TaskTowerContext.jsx'
 
 const tabs = [['in_stock', 'In stock'], ['low', 'Running low'], ['out', 'Out'], ['list', 'Shopping list']]
 const stockStates = [['in_stock', 'In stock'], ['low', 'Running low'], ['out', 'Out']]
-const emptyForm = { name: '', detail: '', category: 'General', state: 'list' }
+const urgencyStates = [['list_low', 'Running low'], ['list_out', 'Out']]
+const shoppingListStates = new Set(['list', 'list_low', 'list_out'])
+const emptyForm = { name: '', detail: '', category: 'General', urgency: 'list_low' }
+
+const isShoppingListItem = (item) => shoppingListStates.has(item.state)
+const listUrgency = (item) => item.state === 'list_out' ? 'list_out' : 'list_low'
 
 export default function ShoppingPage() {
   const {
@@ -21,7 +26,7 @@ export default function ShoppingPage() {
     showToast,
     updateShoppingItemStatus,
   } = useTaskTower()
-  const [tab, setTab] = useState('low')
+  const [tab, setTab] = useState('list')
   const [query, setQuery] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -34,10 +39,13 @@ export default function ShoppingPage() {
   const [error, setError] = useState('')
   const formRef = useRef(null)
   const visible = useMemo(
-    () => shoppingItems.filter((item) => item.state === tab && item.name.toLowerCase().includes(query.toLowerCase())),
+    () => shoppingItems.filter((item) => {
+      const matchesTab = tab === 'list' ? isShoppingListItem(item) : item.state === tab
+      return matchesTab && item.name.toLowerCase().includes(query.toLowerCase())
+    }),
     [shoppingItems, query, tab],
   )
-  const listItems = useMemo(() => shoppingItems.filter((item) => item.state === 'list'), [shoppingItems])
+  const listItems = useMemo(() => shoppingItems.filter(isShoppingListItem), [shoppingItems])
 
   useEffect(() => {
     if (!showForm) return
@@ -48,14 +56,17 @@ export default function ShoppingPage() {
   if (!activeHouse) return null
 
   const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
+  const countForTab = (value) => value === 'list'
+    ? listItems.length
+    : shoppingItems.filter((item) => item.state === value).length
 
   const submit = async (event) => {
     event.preventDefault()
     setBusy(true)
     setError('')
     try {
-      await addShoppingItem(form)
-      setTab(form.state)
+      await addShoppingItem({ ...form, state: form.urgency })
+      setTab('list')
       setForm(emptyForm)
       setShowForm(false)
     } catch (err) {
@@ -96,12 +107,26 @@ export default function ShoppingPage() {
     }
   }
 
+  const changeUrgency = async (item, state) => {
+    if (statusBusy || listUrgency(item) === state) return
+    setStatusBusy(`${item.id}:${state}`)
+    setError('')
+    try {
+      await updateShoppingItemStatus(item.id, state)
+      showToast(`${item.name} is now marked ${state === 'list_out' ? 'out' : 'running low'}.`)
+    } catch (err) {
+      setError(err.message || 'The item urgency could not be updated.')
+    } finally {
+      setStatusBusy(null)
+    }
+  }
+
   const sendToMembers = async () => {
     if (broadcasting) return
     setBroadcasting(true)
     setError('')
     try {
-      const names = listItems.map((item) => item.name)
+      const names = listItems.map((item) => `${item.name} (${listUrgency(item) === 'list_out' ? 'out' : 'running low'})`)
       const summary = names.length
         ? `${names.slice(0, 6).join(', ')}${names.length > 6 ? ` and ${names.length - 6} more` : ''}`
         : 'Shopping list needs attention!'
@@ -148,9 +173,9 @@ export default function ShoppingPage() {
           <label className="field"><span>Details</span><input name="detail" value={form.detail} onChange={update} placeholder="2 litres, semi-skimmed" /></label>
           <div className="form-grid">
             <label className="field"><span>Category</span><input name="category" value={form.category} onChange={update} placeholder="Groceries" /></label>
-            <label className="field"><span>Status</span><select name="state" value={form.state} onChange={update}><option value="in_stock">In stock</option><option value="low">Running low</option><option value="out">Out</option><option value="list">Shopping list</option></select></label>
+            <label className="field"><span>Urgency</span><select name="urgency" value={form.urgency} onChange={update}><option value="list_low">Running low</option><option value="list_out">Out</option></select></label>
           </div>
-          <button className="primary-button" disabled={busy}>{busy ? 'Saving...' : 'Add to household list'}</button>
+          <button className="primary-button" disabled={busy}>{busy ? 'Saving...' : 'Add to shopping list'}</button>
         </form>}
         {error && <div className="inline-message inline-message--error">{error}</div>}
         <section className="shopping-broadcast-card">
@@ -158,7 +183,7 @@ export default function ShoppingPage() {
           <button type="button" className="secondary-button" onClick={sendToMembers} disabled={broadcasting}><Send size={17} /> {broadcasting ? 'Sending...' : 'Send to members'}</button>
         </section>
         <label className="adult-search"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search shopping items" /></label>
-        <div className="adult-tabs" role="tablist">{tabs.map(([value, label]) => <button className={tab === value ? 'active' : ''} onClick={() => setTab(value)} key={value}>{label}<span>{shoppingItems.filter((item) => item.state === value).length}</span></button>)}</div>
+        <div className="adult-tabs" role="tablist">{tabs.map(([value, label]) => <button className={tab === value ? 'active' : ''} onClick={() => setTab(value)} key={value}>{label}<span>{countForTab(value)}</span></button>)}</div>
         <section className="adult-panel shopping-panel">
           <AdultSectionHeader eyebrow={tabs.find(([value]) => value === tab)?.[1]} title={tab === 'list' ? 'Items to buy' : 'Household stock'} />
           {visible.length ? <div className="shopping-list">{visible.map((item) => (
@@ -167,14 +192,14 @@ export default function ShoppingPage() {
               <div className="shopping-row__main">
                 <strong>{item.name}</strong>
                 <small>{item.detail || 'No extra details'} - {item.category}</small>
-                <div className="stock-state-control" aria-label={`${item.name} stock status`}>
-                  {stockStates.map(([value, label]) => (
+                <div className="stock-state-control" aria-label={tab === 'list' ? `${item.name} urgency` : `${item.name} stock status`}>
+                  {(tab === 'list' ? urgencyStates : stockStates).map(([value, label]) => (
                     <button
                       type="button"
-                      className={item.state === value ? 'active' : ''}
-                      onClick={() => changeStatus(item, value)}
+                      className={(tab === 'list' ? listUrgency(item) : item.state) === value ? 'active' : ''}
+                      onClick={() => tab === 'list' ? changeUrgency(item, value) : changeStatus(item, value)}
                       disabled={statusBusy === `${item.id}:${value}`}
-                      aria-pressed={item.state === value}
+                      aria-pressed={(tab === 'list' ? listUrgency(item) : item.state) === value}
                       key={value}
                     >
                       {label}
@@ -184,7 +209,10 @@ export default function ShoppingPage() {
               </div>
               <div className="shopping-row__actions">
                 {tab === 'list'
-                  ? <button className="purchase-button" onClick={() => purchase(item.id)} disabled={purchasingId === item.id} aria-label={`Mark ${item.name} purchased`}>{purchasingId === item.id ? '...' : <Check size={18} />}</button>
+                  ? <>
+                    <StatusBadge status={listUrgency(item) === 'list_out' ? 'overdue' : 'attention'} label={listUrgency(item) === 'list_out' ? 'Out' : 'Low'} />
+                    <button className="purchase-button" onClick={() => purchase(item.id)} disabled={purchasingId === item.id} aria-label={`Mark ${item.name} purchased`}>{purchasingId === item.id ? '...' : <Check size={18} />}</button>
+                  </>
                   : <StatusBadge status={tab === 'out' ? 'overdue' : tab === 'low' ? 'attention' : 'current'} label={tab === 'out' ? 'Out' : tab === 'low' ? 'Low' : 'In'} />}
                 <button className="purchase-button purchase-button--danger" onClick={() => setPendingRemoval(item)} aria-label={`Remove ${item.name}`}><Trash2 size={16} /></button>
               </div>
