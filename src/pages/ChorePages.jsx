@@ -28,7 +28,7 @@ function ChoreCard({ chore, onOpen, onMove, first, last }) {
 
 export function ChoreDashboardPage() {
   const navigate = useNavigate()
-  const { activeHouse, chores, reorderChore } = useTaskTower()
+  const { activeHouse, chores, reorderTask: reorderChore } = useTaskTower()
   const initialFilter = new URLSearchParams(window.location.hash.split('?')[1] || '').get('status') || 'all'
   const [filter, setFilter] = useState(initialFilter)
   const [error, setError] = useState('')
@@ -98,7 +98,7 @@ const emptyChore = {
 export function ChoreEditorPage() {
   const navigate = useNavigate()
   const { houseId, choreId } = useParams()
-  const { chores, dataLoading, saveChore, deleteChore } = useTaskTower()
+  const { chores, dataLoading, saveTask: saveChore, deleteTask: deleteChore } = useTaskTower()
   const existing = chores.find((chore) => chore.id === choreId)
   const [form, setForm] = useState(existing || emptyChore)
   const [saving, setSaving] = useState(false)
@@ -177,7 +177,7 @@ export function ChoreEditorPage() {
 export function ChoreDetailsPage() {
   const navigate = useNavigate()
   const { houseId, choreId } = useParams()
-  const { chores, completeChore, dataLoading } = useTaskTower()
+  const { chores, completeTask: completeChore, dataLoading } = useTaskTower()
   const chore = chores.find((item) => item.id === choreId)
   const [celebrating, setCelebrating] = useState(false)
   const [busy, setBusy] = useState(false)
