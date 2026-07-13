@@ -11,17 +11,25 @@ import {
   completeTaskRecord,
   createHouseRecord,
   createNoticeRecord,
+  deleteAllNotificationRecords,
+  deleteNotificationRecord,
   deleteNoticeRecord,
   deleteShoppingRecord,
   deleteTaskRecord,
+  hideHouseholdChatThreadRecord,
+  hideMessageThreadRecord,
   joinHouseRecord,
   leaveHouseRecord,
+  markHouseholdChatReadRecord,
+  markMessageThreadReadRecord,
   markNotificationsReadRecord,
   purchaseShoppingRecord,
   reorderTaskRecords,
   saveProfileRecord,
   sendHouseholdNotificationRecord,
   sendMessageRecord,
+  sendPushTestNotificationRecord,
+  sendTaskSavedPushRecord,
   updateShoppingStatusRecord,
   updateHouseRecord,
 } from '../lib/liveMutations.js'
@@ -487,13 +495,19 @@ export function TaskTowerProvider({ children }) {
     leaveHouse,
     updateHouse,
 
-    saveTask: (task) =>
-      saveTask(
-        household.activeHouse?.id,
-        requireUser().id,
+    saveTask: async (task) => {
+      const userId = requireUser().id
+      const houseId = household.activeHouse?.id
+      const isNew = !household.chores.some((item) => item.id === task.id)
+      const saved = await saveTask(
+        houseId,
+        userId,
         household.chores,
         task,
-      ),
+      )
+      await sendTaskSavedPushRecord(houseId, saved, { isNew })
+      return saved
+    },
 
     deleteTask: deleteTaskRecord,
 
@@ -529,12 +543,43 @@ export function TaskTowerProvider({ children }) {
 
     deleteShoppingItem: deleteShoppingRecord,
 
-    sendMessage: (body) =>
+    sendMessage: (body, recipientId = null) =>
       sendMessageRecord(
         household.activeHouse?.id,
         requireUser().id,
         body,
+        recipientId,
       ),
+
+    markMessageThreadRead: (otherUserId) => {
+      requireUser()
+      return markMessageThreadReadRecord(
+        household.activeHouse?.id,
+        otherUserId,
+      )
+    },
+
+    markHouseholdChatRead: () => {
+      requireUser()
+      return markHouseholdChatReadRecord(
+        household.activeHouse?.id,
+      )
+    },
+
+    hideMessageThread: (otherUserId) => {
+      requireUser()
+      return hideMessageThreadRecord(
+        household.activeHouse?.id,
+        otherUserId,
+      )
+    },
+
+    hideHouseholdChatThread: () => {
+      requireUser()
+      return hideHouseholdChatThreadRecord(
+        household.activeHouse?.id,
+      )
+    },
 
     createNotice: (notice) =>
       createNoticeRecord(
@@ -545,10 +590,32 @@ export function TaskTowerProvider({ children }) {
 
     deleteNotice: deleteNoticeRecord,
 
-    markNotificationsRead: () =>
-      markNotificationsReadRecord(
+    markNotificationsRead: async () => {
+      await markNotificationsReadRecord(
         requireUser().id,
-      ),
+      )
+      household.setNotifications((current) =>
+        current.map((item) => ({ ...item, unread: false })),
+      )
+    },
+
+    deleteNotification: async (id) => {
+      await deleteNotificationRecord(
+        id,
+        requireUser().id,
+      )
+      household.setNotifications((current) =>
+        current.filter((item) => item.id !== id),
+      )
+    },
+
+    deleteAllNotifications: async () => {
+      await deleteAllNotificationRecords(
+        requireUser().id,
+        household.activeHouse?.id,
+      )
+      household.setNotifications([])
+    },
 
     sendHouseholdNotification: (notification) => {
       requireUser()
@@ -557,6 +624,12 @@ export function TaskTowerProvider({ children }) {
         notification,
       )
     },
+
+    sendPushTestNotification: () =>
+      sendPushTestNotificationRecord(
+        household.activeHouse?.id,
+        requireUser().id,
+      ),
 
     showToast,
     haptic,

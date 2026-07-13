@@ -7,6 +7,13 @@ import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import { categoryMeta } from '../data/defaults.js'
 import { useTaskTower } from '../context/TaskTowerContext.jsx'
 
+const sentMessage = (result) => {
+  const members = `${result.memberCount} member${result.memberCount === 1 ? '' : 's'}`
+  if (result.pushDelivered && result.pushSent > 0) return `Sent to ${members} and ${result.pushSent} Android device${result.pushSent === 1 ? '' : 's'}.`
+  if (result.pushDelivered) return `Sent in-app to ${members}. No Android devices are registered yet.`
+  return `Sent in-app to ${members}. Android push failed: ${result.pushError || 'check Firebase secrets and the Edge Function.'}`
+}
+
 function ChoreCard({ chore, onOpen, onMove, first, last }) {
   const progress = Math.min(100, (chore.quickCount / chore.fullCleanThreshold) * 100)
   const meta = categoryMeta[chore.category] || categoryMeta.Housework
@@ -63,7 +70,7 @@ export function ChoreDashboardPage() {
           chore_ids: pending.map((item) => item.id),
         },
       })
-      showToast(`Reminder sent to ${result.memberCount} member${result.memberCount === 1 ? '' : 's'}.`)
+      showToast(sentMessage(result))
     } catch (err) {
       setError(err.message || 'Task reminders could not be sent.')
     } finally {
@@ -250,7 +257,7 @@ export function ChoreDetailsPage() {
           chore_id: chore.id,
         },
       })
-      showToast(`Reminder sent to ${result.memberCount} member${result.memberCount === 1 ? '' : 's'}.`)
+      showToast(sentMessage(result))
     } catch (err) {
       setError(err.message || 'The reminder could not be sent.')
     } finally {

@@ -58,6 +58,17 @@
   color: var(--purple-deep);
 }
 
+.notification-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notification-settings-actions .secondary-button,
+.notification-settings-actions .text-button {
+  min-height: 38px;
+}
+
 .toggle--small {
   width: 40px;
   height: 24px;
@@ -79,4 +90,51 @@
   background: #fae8ea;
   font-size: 8px;
   line-height: 1.45;
+}
+
+.individual-progress-list {
+  display: grid;
+  gap: 10px;
+}
+
+.individual-progress-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface-raised);
+}
+
+.individual-progress-row span {
+  display: grid;
+  gap: 2px;
+}
+
+.individual-progress-row strong {
+  font-size: 12px;
+}
+
+.individual-progress-row small,
+.individual-progress-row em {
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.individual-progress-row > div:last-child {
+  grid-column: 2 / -1;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.individual-progress-row > div:last-child i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--household-sage), var(--mint));
 }

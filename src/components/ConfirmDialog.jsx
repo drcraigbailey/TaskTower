@@ -1,6 +1,7 @@
 import { AlertTriangle, X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useNativeBackAction } from '../lib/nativeBack.js'
 
 export default function ConfirmDialog({
   open,
@@ -13,6 +14,11 @@ export default function ConfirmDialog({
   onCancel,
 }) {
   const confirmRef = useRef(null)
+  useNativeBackAction(() => {
+    if (!open) return false
+    if (!busy) onCancel()
+    return true
+  }, open, 100)
 
   useEffect(() => {
     if (!open) return undefined

@@ -35,6 +35,8 @@ export default function useLiveHouseholds(user, profile, showToast, haptic) {
   const [chores, setChores] = useState([])
   const [shoppingItems, setShoppingItems] = useState([])
   const [messages, setMessages] = useState([])
+  const [householdThread, setHouseholdThread] = useState(null)
+  const [messageThreads, setMessageThreads] = useState([])
   const [notices, setNotices] = useState([])
   const [activity, setActivity] = useState([])
   const [notifications, setNotifications] = useState([])
@@ -46,6 +48,8 @@ export default function useLiveHouseholds(user, profile, showToast, haptic) {
     setChores([])
     setShoppingItems([])
     setMessages([])
+    setHouseholdThread(null)
+    setMessageThreads([])
     setNotices([])
     setActivity([])
     setNotifications([])
@@ -58,6 +62,8 @@ export default function useLiveHouseholds(user, profile, showToast, haptic) {
     setChores(snapshot.chores)
     setShoppingItems(snapshot.shoppingItems)
     setMessages(snapshot.messages)
+    setHouseholdThread(snapshot.householdThread)
+    setMessageThreads(snapshot.messageThreads)
     setNotices(snapshot.notices)
     setActivity(snapshot.activity)
     setNotifications(snapshot.notifications)
@@ -145,6 +151,7 @@ export default function useLiveHouseholds(user, profile, showToast, haptic) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_game_state', filter: `household_id=eq.${houseId}` }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'household_shopping_items', filter: `household_id=eq.${houseId}` }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'household_messages', filter: `household_id=eq.${houseId}` }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'household_message_thread_state', filter: `household_id=eq.${houseId}` }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'household_notices', filter: `household_id=eq.${houseId}` }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `household_id=eq.${houseId}` }, refresh)
       .subscribe()
@@ -164,6 +171,8 @@ export default function useLiveHouseholds(user, profile, showToast, haptic) {
     setChores,
     shoppingItems,
     messages,
+    householdThread,
+    messageThreads,
     notices,
     activity,
     notifications,

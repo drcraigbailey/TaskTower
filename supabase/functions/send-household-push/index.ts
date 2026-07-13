@@ -75,6 +75,28 @@ const fcmData = (data: Record<string, unknown>, householdId: string, type: strin
   ]))
 }
 
+const channelByType: Record<string, string> = {
+  direct_message: 'dwellio-messages',
+  household_message: 'dwellio-messages',
+  task: 'dwellio-tasks',
+  task_reminder: 'dwellio-tasks',
+  chore_completed: 'dwellio-tasks',
+  due_soon: 'dwellio-tasks',
+  overdue: 'dwellio-tasks',
+  shopping: 'dwellio-shopping',
+  shopping_added: 'dwellio-shopping',
+  shopping_low: 'dwellio-shopping',
+  shopping_out: 'dwellio-shopping',
+  shopping_broadcast: 'dwellio-shopping',
+  notice: 'dwellio-notices',
+  urgent_notice: 'dwellio-notices',
+  household_notice: 'dwellio-notices',
+  invitation: 'dwellio-notices',
+  member_joined: 'dwellio-notices',
+}
+
+const channelForType = (type: string) => channelByType[type] || 'dwellio-household'
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405)
@@ -84,6 +106,7 @@ Deno.serve(async (request) => {
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const firebaseProjectId = Deno.env.get('FIREBASE_PROJECT_ID')
+    const firebaseAndroidPackage = Deno.env.get('FIREBASE_ANDROID_PACKAGE') || undefined
     if (!supabaseUrl || !anonKey || !serviceRoleKey || !firebaseProjectId) {
       throw new Error('Supabase or Firebase env vars are missing.')
     }
@@ -95,6 +118,10 @@ Deno.serve(async (request) => {
     const title = String(body.title || '').trim()
     const messageBody = String(body.body || '').trim()
     const data = body.data || {}
+    const recipientIds = Array.isArray(body.recipientIds || body.recipient_ids)
+      ? (body.recipientIds || body.recipient_ids).filter(Boolean)
+      : []
+    const includeSender = body.includeSender ?? body.include_sender ?? true
 
     if (!householdId || !title) return jsonResponse({ error: 'Missing householdId or title.' }, 400)
 
@@ -119,24 +146,30 @@ Deno.serve(async (request) => {
       .eq('household_id', householdId)
     if (memberError) throw memberError
 
-    const memberIds = (members || []).map((member) => member.user_id)
+    const householdMemberIds = (members || []).map((member) => member.user_id)
+    const allowedRecipients = recipientIds.length
+      ? recipientIds.filter((id: string) => householdMemberIds.includes(id))
+      : householdMemberIds
+    const memberIds = allowedRecipients.filter((id: string) => includeSender || id !== userResult.user.id)
     if (!memberIds.length) return jsonResponse({ sent: 0, failed: 0 })
 
     const { data: tokens, error: tokenError } = await adminClient
       .from('push_tokens')
-      .select('token')
+      .select('id, token')
       .in('user_id', memberIds)
+      .eq('platform', 'android')
+      .eq('enabled', true)
     if (tokenError) throw tokenError
     if (!tokens?.length) return jsonResponse({ sent: 0, failed: 0 })
 
     const accessToken = await firebaseAccessToken()
     const endpoint = `https://fcm.googleapis.com/v1/projects/${firebaseProjectId}/messages:send`
-    const payloadData = fcmData(data, householdId, type)
+    const payloadData = fcmData({ ...data, title, body: messageBody }, householdId, type)
     let sent = 0
     let failed = 0
-    const invalidTokens: string[] = []
+    const invalidTokenIds: string[] = []
 
-    await Promise.all(tokens.map(async ({ token }) => {
+    await Promise.all(tokens.map(async ({ id, token }) => {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -149,9 +182,16 @@ Deno.serve(async (request) => {
             notification: { title, body: messageBody },
             data: payloadData,
             android: {
+              priority: 'HIGH',
+              restricted_package_name: firebaseAndroidPackage,
+              ttl: '3600s',
               notification: {
-                channel_id: 'dwellio-household',
-                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                channel_id: channelForType(type),
+                sound: 'default',
+                default_sound: true,
+                default_vibrate_timings: true,
+                notification_priority: 'PRIORITY_HIGH',
+                visibility: 'PUBLIC',
               },
             },
           },
@@ -164,11 +204,14 @@ Deno.serve(async (request) => {
       }
 
       failed += 1
-      if ([400, 404].includes(response.status)) invalidTokens.push(token)
+      if ([400, 404].includes(response.status)) invalidTokenIds.push(id)
     }))
 
-    if (invalidTokens.length) {
-      await adminClient.from('push_tokens').delete().in('token', invalidTokens)
+    if (invalidTokenIds.length) {
+      await adminClient
+        .from('push_tokens')
+        .update({ enabled: false, updated_at: new Date().toISOString(), last_seen_at: new Date().toISOString() })
+        .in('id', invalidTokenIds)
     }
 
     return jsonResponse({ sent, failed })

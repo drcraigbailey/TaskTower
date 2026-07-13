@@ -1,4 +1,4 @@
-import { BellRing, CheckCircle2, ClipboardList, Copy, Home, LogOut, MessageCircle, Moon, RotateCcw, Save, ShieldCheck, ShoppingBasket, Trophy, UserRound, Users } from 'lucide-react'
+import { BellRing, CheckCircle2, ClipboardList, Copy, Home, LogOut, MessageCircle, Moon, RotateCcw, Save, Send, ShieldCheck, ShoppingBasket, Trophy, UserRound, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MemberAvatar } from '../../components/adult/AdultUi.jsx'
@@ -11,6 +11,7 @@ import { resetHouseholdProgressRecord } from '../../lib/liveMutations.js'
 import {
   getNotificationPermissionStatus,
   loadNotificationPreferences,
+  openAndroidNotificationSettings,
   saveNotificationPreferences,
   setNativeNotificationsEnabled,
 } from '../../lib/pushNotifications.js'
@@ -25,10 +26,11 @@ const notificationRows = [
   ['monthlyResults', 'Progress results', 'Winners and household summaries', Trophy],
 ]
 
-function NotificationSettingsPanel({ showToast }) {
+function NotificationSettingsPanel({ onSendTestNotification, showToast }) {
   const [preferences, setPreferences] = useState(null)
   const [permission, setPermission] = useState('checking')
   const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -70,6 +72,32 @@ function NotificationSettingsPanel({ showToast }) {
     }
   }
 
+  const openSettings = async () => {
+    const opened = await openAndroidNotificationSettings()
+    if (!opened) showToast?.('Open Android Settings, then Dwellio notifications.', 'neutral')
+  }
+
+  const sendTest = async () => {
+    if (testing || !onSendTestNotification) return
+    setTesting(true)
+    try {
+      const latestPermission = await getNotificationPermissionStatus()
+      setPermission(latestPermission)
+      if (latestPermission === 'denied') {
+        showToast?.('Notifications are blocked in Android settings.', 'neutral')
+        return
+      }
+      const result = await onSendTestNotification()
+      if (result.pushDelivered && result.pushSent > 0) showToast?.('Test notification sent.')
+      else if (result.pushDelivered) showToast?.('No active Android push token found for this device.', 'neutral')
+      else showToast?.('Backend notification service is not connected yet.', 'error')
+    } catch (error) {
+      showToast?.(error.message || 'Test notification could not be sent.', 'error')
+    } finally {
+      setTesting(false)
+    }
+  }
+
   const statusText = permission === 'granted'
     ? 'Notifications allowed on this device'
     : permission === 'denied'
@@ -95,14 +123,18 @@ function NotificationSettingsPanel({ showToast }) {
           </div>
         ))}
       </div>
-      {permission === 'denied' && <p className="notification-settings-note">Android has blocked notification permission. Open Dwellio in Android Settings → Notifications to allow it again.</p>}
+      <div className="notification-settings-actions">
+        <button type="button" className="secondary-button" onClick={sendTest} disabled={testing || !preferences.enabled || !onSendTestNotification}><Send size={16} />{testing ? 'Sending...' : 'Send test notification'}</button>
+        {permission === 'denied' && <button type="button" className="text-button" onClick={openSettings}>Open Android settings</button>}
+      </div>
+      {permission === 'denied' && <p className="notification-settings-note">Android has blocked notification permission. Open Dwellio in Android Settings - Notifications to allow it again.</p>}
     </section>
   )
 }
 
 export default function AdultSettingsPage() {
   const navigate = useNavigate()
-  const { activeHouse, leaveHouse, logout, profile, refreshActiveHouse, showToast, theme, setTheme, updateHouse } = useTaskTower()
+  const { activeHouse, leaveHouse, logout, profile, refreshActiveHouse, sendPushTestNotification, showToast, theme, setTheme, updateHouse, user } = useTaskTower()
   const [form, setForm] = useState({ name: '' })
   const [saving, setSaving] = useState(false)
   const [leaving, setLeaving] = useState(false)
@@ -192,13 +224,29 @@ export default function AdultSettingsPage() {
           <section className="adult-panel manual-reset-panel">
             <div className="activity-title"><RotateCcw size={20} /><h2>Reset progress</h2></div>
             <p>Start a fresh household competition whenever you choose. Previous task completions remain in the activity history, but everyone’s current points and floors return to zero.</p>
+            <div className="individual-progress-list">
+              {[...activeHouse.members].sort((a, b) => b.floors - a.floors).map((member) => {
+                const progress = Math.min(100, Math.round((member.floors / Math.max(activeHouse.towerHeight || 1, 1)) * 100))
+                return (
+                  <div className="individual-progress-row" key={member.id}>
+                    <MemberAvatar name={member.username} image={member.profileImage} online={member.id === user?.id} />
+                    <span>
+                      <strong>{member.username}</strong>
+                      <small>{member.floors} floor{member.floors === 1 ? '' : 's'} - {member.points} point{member.points === 1 ? '' : 's'}</small>
+                    </span>
+                    <em>{progress}%</em>
+                    <div><i style={{ width: `${progress}%` }} /></div>
+                  </div>
+                )
+              })}
+            </div>
             <button type="button" className="danger-button" onClick={() => setConfirmReset(true)} disabled={resetting}><RotateCcw size={18} /> Reset household progress</button>
           </section>
         )}
         <section className="adult-panel"><div className="activity-title"><Users size={20} /><h2>Members</h2></div><div className="adult-member-row">{activeHouse.members.map((member) => <div key={member.id}><MemberAvatar name={member.username} image={member.profileImage} online /><strong>{member.username}</strong><small>{member.role}</small></div>)}</div></section>
         <HouseholdOwnerControls />
         <section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section>
-        <NotificationSettingsPanel showToast={showToast} />
+        <NotificationSettingsPanel onSendTestNotification={sendPushTestNotification} showToast={showToast} />
         <div className="adult-owner-note"><ShieldCheck size={19} /><span><strong>{activeHouse.role === 'owner' ? 'Household owner' : 'Household member'}</strong><small>{activeHouse.role === 'owner' ? 'Household changes are saved for everyone.' : 'Only the owner can change shared household details.'}</small></span></div>
         {activeHouse.role !== 'owner' && <button className="danger-button" onClick={() => setConfirmLeave(true)}>Leave household</button>}
         <button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button>
@@ -212,7 +260,7 @@ export default function AdultSettingsPage() {
 
 export function AdultProfileSettingsPage() {
   const navigate = useNavigate()
-  const { logout, profile, saveProfileSettings, showToast, theme, setTheme } = useTaskTower()
+  const { logout, profile, saveProfileSettings, sendPushTestNotification, showToast, theme, setTheme } = useTaskTower()
   const [username, setUsername] = useState(profile.username)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -257,7 +305,7 @@ export function AdultProfileSettingsPage() {
           <button className="primary-button" disabled={saving}><Save size={18} /> {saving ? 'Saving…' : 'Save profile'}</button>
         </form>
         <section className="adult-panel settings-preference"><div><span className="settings-icon"><Moon size={19} /></span><span><strong>Appearance</strong><small>Use dark mode</small></span></div><button className={`toggle ${theme === 'dark' ? 'active' : ''}`} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-pressed={theme === 'dark'}><i /></button></section>
-        <NotificationSettingsPanel showToast={showToast} />
+        <NotificationSettingsPanel onSendTestNotification={sendPushTestNotification} showToast={showToast} />
         <button className="danger-button" onClick={signOut}><LogOut size={18} /> Log out</button>
       </section>
     </AppShell>

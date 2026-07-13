@@ -1302,6 +1302,12 @@
 .adult-notification-list strong { font-size: 13px; }
 .adult-notification-list p { font-size: 11px; }
 .adult-notification-list small { font-size: 10px; }
+.notification-card-actions { display: flex; align-items: center; gap: 9px; }
+.notification-card-actions button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 11px; color: #9b3c45; background: var(--surface); }
+.notification-card-actions button:disabled { opacity: .6; }
+.notification-header-actions { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.notification-header-actions .adult-text-action { white-space: nowrap; }
+.adult-text-action--danger { color: #9b3c45; }
 
 .empty-list,
 .adult-empty { padding: 46px 20px; }

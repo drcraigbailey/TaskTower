@@ -2,8 +2,8 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@mipmap/ic_launcher_background" />
     <item
-        android:width="76dp"
-        android:height="76dp"
+        android:width="66dp"
+        android:height="66dp"
         android:gravity="center"
         android:drawable="@mipmap/ic_launcher_foreground" />
 </layer-list>

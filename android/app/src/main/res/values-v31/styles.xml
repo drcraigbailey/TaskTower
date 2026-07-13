@@ -4,6 +4,10 @@
         <item name="windowSplashScreenBackground">#FBF9F4</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/dwellio_splash_transparent</item>
         <item name="windowSplashScreenIconBackgroundColor">#FBF9F4</item>
+        <item name="android:statusBarColor">#FBF9F4</item>
+        <item name="android:navigationBarColor">#FBF9F4</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

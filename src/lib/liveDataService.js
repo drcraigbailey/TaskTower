@@ -140,15 +140,16 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
     db.from('chores').select('*').eq('household_id', houseId).eq('is_active', true).order('sort_order'),
     db.from('monthly_game_state').select('*').eq('household_id', houseId).order('updated_at', { ascending: false }).limit(1000),
     db.from('household_join_codes').select('code').eq('household_id', houseId).eq('active', true).limit(1).maybeSingle(),
-    db.from('notifications').select('*').eq('household_id', houseId).order('created_at', { ascending: false }).limit(40),
+    db.from('notifications').select('*').eq('household_id', houseId).eq('user_id', user.id).order('created_at', { ascending: false }).limit(40),
     db.from('household_shopping_items').select('*').eq('household_id', houseId).order('created_at', { ascending: false }).limit(100),
-    db.from('household_messages').select('*').eq('household_id', houseId).order('created_at', { ascending: false }).limit(100),
+    db.from('household_messages').select('*').eq('household_id', houseId).order('created_at', { ascending: false }).limit(300),
+    db.from('household_message_thread_state').select('*').eq('household_id', houseId).eq('user_id', user.id),
     db.from('household_notices').select('*').eq('household_id', houseId).order('created_at', { ascending: false }).limit(50),
     db.from('chore_completions').select('id, chore_id, user_id, completion_type, completed_at').eq('household_id', houseId).order('completed_at', { ascending: false }).limit(80),
   ])
   const error = results.find((result) => result.error)?.error
   if (error) throw error
-  const [houseResult, membersResult, choresResult, gameResult, codeResult, notificationsResult, shoppingResult, messagesResult, noticesResult, completionsResult] = results
+  const [houseResult, membersResult, choresResult, gameResult, codeResult, notificationsResult, shoppingResult, messagesResult, threadStatesResult, noticesResult, completionsResult] = results
   if (!houseResult.data) throw new Error('That household is no longer available.')
 
   const memberIds = (membersResult.data || []).map((item) => item.user_id)
@@ -189,11 +190,90 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
   const imageById = Object.fromEntries(members.map((item) => [item.id, item.profileImage]))
   const choreRows = choresResult.data || []
   const choreNameById = Object.fromEntries(choreRows.map((item) => [item.id, item.display_name]))
+  const laterDate = (first, second) => {
+    if (!first) return second || null
+    if (!second) return first
+    return new Date(first) > new Date(second) ? first : second
+  }
+  const threadStates = threadStatesResult.data || []
+  const householdThreadState = threadStates.find((item) => item.thread_key === 'household' || !item.other_user_id) || {}
+  const threadStateByOtherId = Object.fromEntries(
+    threadStates
+      .filter((item) => item.other_user_id)
+      .map((item) => [item.other_user_id, item]),
+  )
+  const householdMessageRows = (messagesResult.data || []).filter((item) => !item.recipient_id)
+  const latestHouseholdMessageRow = householdMessageRows[0] || null
+  const householdThreadHidden = Boolean(
+    householdThreadState.hidden_at
+    && (!latestHouseholdMessageRow || new Date(latestHouseholdMessageRow.created_at) <= new Date(householdThreadState.hidden_at)),
+  )
+  const householdUnreadCutoff = laterDate(householdThreadState.read_at, householdThreadState.hidden_at)
+  const householdUnreadCount = householdMessageRows.filter((message) => (
+    message.author_id !== user.id
+    && (!householdUnreadCutoff || new Date(message.created_at) > new Date(householdUnreadCutoff))
+  )).length
+  const directMessageRows = (messagesResult.data || []).filter((item) => item.recipient_id)
+  const messageThreads = []
+  const seenThreadIds = new Set()
+
+  const householdThread = {
+    id: 'household',
+    participantName: 'Household chat',
+    participantImage: null,
+    preview: latestHouseholdMessageRow?.body || 'Message everyone in the household',
+    previewMine: latestHouseholdMessageRow?.author_id === user.id,
+    time: latestHouseholdMessageRow ? relativeTime(latestHouseholdMessageRow.created_at) : '',
+    createdAt: latestHouseholdMessageRow?.created_at || null,
+    unread: householdUnreadCount > 0,
+    unreadCount: householdUnreadCount,
+    hiddenAt: householdThreadState.hidden_at || null,
+    readAt: householdThreadState.read_at || null,
+    visible: !householdThreadHidden,
+  }
+
+  for (const item of directMessageRows) {
+    const otherId = item.author_id === user.id ? item.recipient_id : item.author_id
+    if (!otherId || seenThreadIds.has(otherId)) continue
+    const state = threadStateByOtherId[otherId] || {}
+    if (state.hidden_at && new Date(item.created_at) <= new Date(state.hidden_at)) continue
+
+    const unreadCutoff = laterDate(state.read_at, state.hidden_at)
+    const unreadCount = directMessageRows.filter((message) => (
+      message.author_id === otherId
+      && message.recipient_id === user.id
+      && (!unreadCutoff || new Date(message.created_at) > new Date(unreadCutoff))
+    )).length
+
+    seenThreadIds.add(otherId)
+    messageThreads.push({
+      id: otherId,
+      participantId: otherId,
+      participantName: nameById[otherId] || 'Housemate',
+      participantImage: imageById[otherId] || null,
+      preview: item.body,
+      previewMine: item.author_id === user.id,
+      time: relativeTime(item.created_at),
+      createdAt: item.created_at,
+      unread: unreadCount > 0,
+      unreadCount,
+      hiddenAt: state.hidden_at || null,
+      readAt: state.read_at || null,
+    })
+  }
+
   const messages = [...(messagesResult.data || [])].reverse().map((item) => ({
     id: item.id,
     authorId: item.author_id,
+    recipientId: item.recipient_id || null,
     author: item.author_id === user.id ? 'You' : nameById[item.author_id] || 'Housemate',
     authorImage: imageById[item.author_id] || null,
+    recipient: item.recipient_id
+      ? item.recipient_id === user.id
+        ? 'you'
+        : nameById[item.recipient_id] || 'Housemate'
+      : null,
+    direct: Boolean(item.recipient_id),
     body: item.body,
     time: relativeTime(item.created_at),
     createdAt: item.created_at,
@@ -271,7 +351,7 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
       type: 'messages',
       member: item.author_id === user.id ? 'You' : nameById[item.author_id] || 'Housemate',
       memberImage: imageById[item.author_id] || null,
-      action: 'sent a message',
+      action: item.recipient_id ? 'sent a direct message' : 'sent a message',
       subject: item.body.length > 45 ? `${item.body.slice(0, 45)}…` : item.body,
       time: relativeTime(item.created_at),
       createdAt: item.created_at,
@@ -297,6 +377,8 @@ export async function loadHouseSnapshot(houseId, user, ownProfile) {
     chores: choreRows.map(mapChore),
     shoppingItems,
     messages,
+    householdThread,
+    messageThreads,
     notices,
     notifications,
     activity,

@@ -5,15 +5,26 @@ import { AppShell, ScreenHeader } from '../../components/AppShell.jsx'
 import BottomNav from '../../components/BottomNav.jsx'
 import ConfirmDialog from '../../components/ConfirmDialog.jsx'
 import { useTaskTower } from '../../context/TaskTowerContext.jsx'
+import { useNativeBackAction } from '../../lib/nativeBack.js'
 
 const tabs = [['in_stock', 'In stock'], ['low', 'Running low'], ['out', 'Out'], ['list', 'Shopping list']]
 const stockStates = [['in_stock', 'In stock'], ['low', 'Running low'], ['out', 'Out']]
+<<<<<<< HEAD
 const urgencyStates = [['list_low', 'Running low'], ['list_out', 'Out']]
 const shoppingListStates = new Set(['list', 'list_low', 'list_out'])
 const emptyForm = { name: '', detail: '', category: 'General', urgency: 'list_low' }
 
 const isShoppingListItem = (item) => shoppingListStates.has(item.state)
 const listUrgency = (item) => item.state === 'list_out' ? 'list_out' : 'list_low'
+=======
+const emptyForm = { name: '', detail: '', category: 'General', state: 'list' }
+const sentMessage = (result) => {
+  const members = `${result.memberCount} member${result.memberCount === 1 ? '' : 's'}`
+  if (result.pushDelivered && result.pushSent > 0) return `Sent to ${members} and ${result.pushSent} Android device${result.pushSent === 1 ? '' : 's'}.`
+  if (result.pushDelivered) return `Sent in-app to ${members}. No Android devices are registered yet.`
+  return `Sent in-app to ${members}. Android push failed: ${result.pushError || 'check Firebase secrets and the Edge Function.'}`
+}
+>>>>>>> e0d27b8 (Update TaskTower app)
 
 export default function ShoppingPage() {
   const {
@@ -46,6 +57,12 @@ export default function ShoppingPage() {
     [shoppingItems, query, tab],
   )
   const listItems = useMemo(() => shoppingItems.filter(isShoppingListItem), [shoppingItems])
+
+  useNativeBackAction(() => {
+    if (!showForm) return false
+    if (!busy) setShowForm(false)
+    return true
+  }, showForm, 20)
 
   useEffect(() => {
     if (!showForm) return
@@ -141,7 +158,7 @@ export default function ShoppingPage() {
           items: names.slice(0, 12),
         },
       })
-      showToast(`Sent to ${result.memberCount} member${result.memberCount === 1 ? '' : 's'}.`)
+      showToast(sentMessage(result))
     } catch (err) {
       setError(err.message || 'The shopping alert could not be sent.')
     } finally {

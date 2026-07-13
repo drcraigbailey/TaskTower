@@ -11,10 +11,15 @@
     },
     "StatusBar": {
       "style": "LIGHT",
-      "backgroundColor": "#FBF9F4"
+      "backgroundColor": "#FBF9F4",
+      "overlaysWebView": false
     },
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_dwellio",
+      "iconColor": "#3C8D83"
     }
   }
 }

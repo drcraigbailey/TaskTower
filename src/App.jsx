@@ -3,7 +3,9 @@ import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-do
 import './App.css'
 import './styles/dwellio-loader.css'
 import orbitLoader from './assets/branding/dwellio-orbit-loader.svg'
+import splashScreen from './assets/branding/dwellio-splash-original.png'
 import { useTaskTower } from './context/TaskTowerContext.jsx'
+import { useAndroidNativeBackButton } from './lib/nativeBack.js'
 import { LoginPage, RegisterPage } from './pages/AuthPages.jsx'
 import { ChoreDashboardPage, ChoreDetailsPage, ChoreEditorPage } from './pages/ChorePages.jsx'
 import NotificationsPage from './features/notifications/NotificationsPage.jsx'
@@ -28,6 +30,14 @@ function LoadingContent({ size = 180 }) {
         aria-hidden="true"
         style={{ '--dwellio-loader-size': `${size}px` }}
       />
+    </div>
+  )
+}
+
+function StartupSplash() {
+  return (
+    <div className="dwellio-startup-splash" role="status" aria-live="polite" aria-label="Loading Dwellio">
+      <img src={splashScreen} alt="" aria-hidden="true" />
     </div>
   )
 }
@@ -111,6 +121,7 @@ function App() {
   const [displayedLocation, setDisplayedLocation] = useState(location)
   const [transitioning, setTransitioning] = useState(false)
   const [showStartupLoader, setShowStartupLoader] = useState(true)
+  useAndroidNativeBackButton()
 
   useEffect(() => {
     const timer = window.setTimeout(() => setShowStartupLoader(false), STARTUP_LOADER_MS)
@@ -129,7 +140,7 @@ function App() {
     return () => window.clearTimeout(timer)
   }, [displayedLocation.key, location])
 
-  if (showStartupLoader) return <RouteLoading label="Loading Dwellio" />
+  if (showStartupLoader) return <StartupSplash />
   if (transitioning) return <RouteLoading label="Loading page" />
   return <AppRoutes location={displayedLocation} />
 }
